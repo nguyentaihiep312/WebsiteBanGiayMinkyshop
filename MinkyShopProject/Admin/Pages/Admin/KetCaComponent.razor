@@ -1,0 +1,421 @@
+﻿@page "/admin/ketca"
+@using System.IdentityModel.Tokens.Jwt;
+@using MinkyShopProject.Business.Entities;
+@using Blazored.LocalStorage;
+@using MinkyShopProject.Business.Pagination;
+@using MinkyShopProject.Data.Models;
+@using PaginationRequest = MinkyShopProject.Business.Pagination.PaginationRequest;
+@using System.Net.Mail
+@using System.Text.RegularExpressions;
+<PageTitle>Kết Ca</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div class="form-group">
+                        <label class="form-control-label">Nhân viên trực ca: @(NhanVien.Ma) - @(NhanVien.Ten)</label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-control-label">Thời gian vào ca: @Ca.ThoiGianNhanCa.ToShortTimeString() @(Ca.ThoiGianNhanCa.Day)/@(Ca.ThoiGianNhanCa.Month)/@(Ca.ThoiGianNhanCa.Year) </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        @if (CaCuoiNgay != true)
+                        {
+                            <div class="form-group position-relative">
+                                <div>
+                                    <label class="form-control-label">Nhân viên bàn giao </label>
+                                </div>
+                                <input value="@(InfoNhanVien)" type="text" class="form-control form-control-sm" @oninput="TimKiemNhanVien" />
+                                <div class="position-relative">
+                                    @if (lstNhanVien != null)
+                                    {
+                                        <div class="position-absolute list-group w-100" style="z-index: 1; right: 0;">
+                                            @foreach (var nhanvien in lstNhanVien)
+                                            {
+                                                <button class="d-flex list-group-item list-group-item-action align-items-center" @onclick="() => ChooseNhanVien(nhanvien.Id)">
+                                                    <div class="mx-auto d-flex justify-content-center">
+                                                        <img class="img-thumbnail" src="@(nhanvien.Anh)" style="width: 50px;border-radius: 50%;height: 50px;" />
+                                                        <p class="mt-auto mx-1">@(nhanvien.Ma)</p>
+                                                        <p class="mt-auto">@(nhanvien.Ten)</p>
+                                                    </div>
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        <div class="form-group">
+                            <label class="form-control-label">Tổng Tiền Kê Khai</label>
+                            <input value="@string.Format("{0:0,0}",TongKeKhai)" type="text" class="form-control form-control-sm" @oninput="ChangeKeKhai" />
+                        </div>
+                        @if (KetCaVaReset)
+                        {
+                            <div class="form-group">
+                                <label class="form-control-label">Tiền Mặt Rút</label>
+                                <input value="@string.Format("{0:0,0}",Model.TongTienMatRut)" type="TE" class="form-control form-control-sm" @oninput="ChangTienRut" />
+                            </div>
+                        }
+                    </div>
+                    <div class="col">
+                        <div>
+                            <div class="form-group">
+                                <label class="form-control-label">Tổng tiền mặt đầu ca </label>
+                                <input value="@(Helper.FormatMoney(Ca.TienBanDau))" type="text" class="form-control form-control-sm" disabled />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-control-label">Hóa đơn trong ca</label>
+                                <input value="@(hoadons.Count())" type="text" class="form-control form-control-sm" disabled />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-control-label">Tổng Tiền Mặt Đã Rút</label>
+                                <input value="@(Helper.FormatMoney(Ca.TongTienMatRut))" type="text" class="form-control form-control-sm" disabled />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-control-label">Tổng tiền mặt trong ca</label>
+                                <input value="@(Helper.FormatMoney(Model.TongTienMat))" type="text" class="form-control form-control-sm" disabled />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-control-label">Tổng tiền chuyển khoản</label>
+                                <input value="@(Helper.FormatMoney(Model.TongTienKhac))" type="text" class="form-control form-control-sm" disabled />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group">
+                            <label class="form-control-label">Tổng Tiền mặt Cuối Ca</label>
+                            <input value="@(Helper.FormatMoney(Model.TongTienMatCuoiCa))" type="text" class="form-control form-control-sm" disabled />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-control-label">Tiền Phát Sinh</label>
+                            <input value="@(Helper.FormatMoney(Model.TienPhatSinh))" type="text" class="form-control form-control-sm" disabled />
+                        </div>
+                        <div class="form-group">
+                            <div class="d-flex justify-content-between">
+                                <label class="form-control-label">Ghi chú Phát Sinh </label>
+                                <label class="form-control-label text-danger">@(ErrorGhiChu)</label>
+                            </div>
+                            <textarea @onchange="ChangeGhiChuPhatSinh" class="form-control"></textarea>
+                        </div>
+                        <div class="form-check form-switch d-flex justify-content-between px-0">
+                            <div>
+                                <label class="form-control-label">Kết Ca Và Reset</label>
+                            </div>
+                            <div>
+                                <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" @onchange="ChangeKetCaReset" />
+                            </div>
+                        </div>
+                        <div class="form-check form-switch d-flex justify-content-between px-0">
+                            <div>
+                                <label class="form-control-label">Ca Cuối Ngày</label>
+                            </div>
+                            <div>
+                                <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" @onchange="ChangeKetCa" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-center mt-3">
+                        <button class="btn btn-primary" @onclick="KetCa">Báo Cáo Kết Ca</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject]
+    public ILocalStorageService local { get; set; } = null!;
+
+    [Inject]
+    public SweetAlertService Swal { get; set; } = null!;
+
+    [Inject]
+    public HttpClient HttpClient { get; set; } = null!;
+
+    [Inject]
+    public NavigationManager Navigation { get; set; } = null!;
+
+    private string Time = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+
+    private GiaoCa Ca = new();
+
+    private NhanVien NhanVien = new();
+
+    private float DoanhThu = 0;
+
+    private float DoanhThuTienMat = 0;
+
+    private float DoanhThuChuyenKhoan = 0;
+
+    private float TongKeKhai = 0;
+
+    private List<HoaDon> HoaDons = new();
+
+    private GiaoCaModels.GiaoCaEditModel Model = new GiaoCaModels.GiaoCaEditModel(){TienPhatSinh = 0,GhiChuPhatSinh = string.Empty,ThoiGianGiaoCa = DateTime.Now,TongTienMatRut = 0};
+
+    private Response<PaginationResponse<NhanVien>> Response = new Response<PaginationResponse<NhanVien>>();
+
+    private PaginationRequest Request = new PaginationRequest() { PerPage = 3 ,CurrentPage = 1};
+
+    private List<NhanVien> lstNhanVien = new();
+
+    private string InfoNhanVien = string.Empty;
+
+    private string ErrorNhanVien = string.Empty;
+
+    private string ErrorGhiChu = string.Empty;
+
+    private Guid IdCa;
+
+    private bool CaCuoiNgay = false;
+
+    private List<HoaDon> hoadons = new();
+
+    private bool KetCaVaReset = false;
+
+    private float? tongtienmatrut = 0;
+
+    private Regex Regex = new Regex(@"^[-+]?[0-9]*.?[0-9]+$");
+
+    protected async override Task OnInitializedAsync()
+    {
+        if (await local.GetItemAsStringAsync("Token") == null)
+        {
+            Navigation.NavigateTo("/login");
+        }
+        else
+        {
+            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(await local.GetItemAsStringAsync("Token"));
+            var IdNhanVien = jwt.Claims.FirstOrDefault(c => c.Type.Equals("Id"))?.Value;
+            await GetCaHienTai(IdNhanVien, Time);
+            await GetNhanVien();
+            Model.TongTienMatCuoiCa = 0;
+        }
+    }
+
+    private async Task GetCaHienTai(string IdNhanVien,string Time)
+    {
+        var result = await HttpClient.GetFromJsonAsync<Response<GiaoCa>>($"https://localhost:7053/api/GiaoCas?Id={Guid.Parse(IdNhanVien)}&ThoiGian={Time}");
+        Ca = result.Data;
+        if (Ca == null)
+        {
+            Navigation.NavigateTo("/admin");
+            await Swal.FireAsync("Thông báo", "Vui Lòng Bắt Đầu Ca Làm Việc",SweetAlertIcon.Warning);
+        }
+        else
+        {
+            await GetHoaDonTrongCa();
+            Model.TongTienTrongCa = Ca.TongTienMat + DoanhThu;
+            Model.TongTienMat = Ca.TienBanDau + DoanhThuTienMat - (tongtienmatrut = Ca.TongTienMatRut == null ? 0 : Ca.TongTienMatRut);
+            Model.TongTienKhac = DoanhThuChuyenKhoan;
+            IdCa = Ca.Id;
+        }
+    }
+
+    private async Task GetNhanVien()
+    {
+        var result = await HttpClient.GetFromJsonAsync<Response<NhanVien>>($"https://localhost:7053/api/NhanViens/{Ca.IdNhanVienTrongCa}");
+        NhanVien = result.Data;
+    }
+
+    private async Task GetHoaDonTrongCa()
+    {
+        float TongtienHoaDon = 0;
+        float TienMatHoaDon = 0;
+        float TienChuyenKhoan = 0;
+        var result = await HttpClient.GetFromJsonAsync<Response<List<HoaDon>>>($"https://localhost:7053/api/GiaoCas/HoaDonTrongCa?Id={Ca.IdNhanVienTrongCa}&ThoiGian={Time}");
+        hoadons = result.Data;
+        foreach (var HoaDon in result.Data)
+        {
+            TongtienHoaDon += HoaDon.TongTien;
+            var result2 = await HttpClient.GetFromJsonAsync<Response<List<HinhThucThanhToan>>>($"https://localhost:7053/api/GiaoCas/TienMatHoaDonTrongCa?IdHoaDon={HoaDon.Id}");
+            var result3 = await HttpClient.GetFromJsonAsync<Response<List<HinhThucThanhToan>>>($"https://localhost:7053/api/GiaoCas/TienChuyenKhoanHoaDonTrongCa?IdHoaDon={HoaDon.Id}");
+            foreach (var hinhthucthanhtoan in result2.Data)
+            {
+                TienMatHoaDon += hinhthucthanhtoan.TongTienThanhToan;
+            }
+
+            foreach (var hinhthucthanhtoan in result3.Data)
+            {
+                TienChuyenKhoan += hinhthucthanhtoan.TongTienThanhToan;
+            }
+        }
+        DoanhThu = TongtienHoaDon;
+        DoanhThuTienMat = TienMatHoaDon;
+        DoanhThuChuyenKhoan = TienChuyenKhoan;
+    }
+
+    private async Task ChangeKeKhai(ChangeEventArgs e)
+    {
+
+        if (!Regex.IsMatch(e.Value.ToString()))
+        {
+            TongKeKhai = 0;
+            await Swal.FireAsync("Thông báo", "Tiền Phải Là Số Vui Lòng Nhập Lại", SweetAlertIcon.Warning);
+        }
+        else
+        {
+            if (float.Parse(e.Value.ToString()) < 0)
+            {
+                await Swal.FireAsync("Thông báo", "Tổng Tiền Kê Khai Không Được Âm", SweetAlertIcon.Warning);
+            }
+            else
+            {
+                TongKeKhai = float.Parse(e.Value.ToString());
+                Model.TienPhatSinh = Model.TongTienMat - float.Parse(e.Value.ToString());
+
+                if (Model.TongTienMatRut == 0)
+                {
+                    Model.TongTienMatCuoiCa = TongKeKhai;
+                }
+                else
+                {
+                    Model.TongTienMatCuoiCa = TongKeKhai - Model.TongTienMatRut;
+                }
+
+                if (Model.TienPhatSinh <= 0 || float.Parse(e.Value.ToString()) == 0)
+                {
+                    Model.TienPhatSinh = 0;
+                }
+            }
+        }
+    }
+
+    private async Task TimKiemNhanVien(ChangeEventArgs e)
+    {
+        Request.Keyword = e.Value?.ToString();
+        Response = await HttpClient.GetFromJsonAsync<Response<PaginationResponse<NhanVien>>>($"https://localhost:7053/api/NhanViens?PerPage={Request.PerPage}&CurrentPage={Request.CurrentPage}&Keyword={Request.Keyword}");
+        lstNhanVien = Response.Data.Data.Where(c => c.Id != Ca.IdNhanVienTrongCa && c.VaiTro != 0).ToList();
+        InfoNhanVien = string.Empty;
+        ErrorNhanVien = "";
+    }
+
+    private async Task ChooseNhanVien(Guid Id)
+    {
+        var result = await HttpClient.GetFromJsonAsync<Response<NhanVien>>($"https://localhost:7053/api/NhanViens/{Id}");
+        var nhanvien = result.Data;
+        Model.IdNhanVienCaTiepTheo = Id;
+        InfoNhanVien = $"{nhanvien.Ma} - {nhanvien.Ten}";
+        lstNhanVien = new();
+    }
+
+    private async Task KetCa()
+    {
+        if (Model.IdNhanVienCaTiepTheo == null && CaCuoiNgay == false)
+        {
+            await Swal.FireAsync("Thông báo","Mời Chọn Nhân Viên Nhận Bàn Giao", SweetAlertIcon.Warning);
+        }
+        else if (Model.TienPhatSinh != 0 && string.IsNullOrEmpty(Model.GhiChuPhatSinh))
+        {
+            await Swal.FireAsync("Thông báo", "Vui Lòng Ghi Chú Các Khoản Phát Sinh", SweetAlertIcon.Warning);
+        }
+        else
+        {
+            var confirm = await Swal.FireAsync(new SweetAlertOptions { Title = "Bạn Có Chắc Muốn Kết Ca", ShowConfirmButton = true, ShowCancelButton = true, Icon = SweetAlertIcon.Question });
+
+            if (string.IsNullOrEmpty(confirm.Value)) return;
+
+            if (Model.TongTienMatRut != 0)
+            {
+                Model.GhiChuRutTien = $"Số tiền rút: {Helper.FormatMoney(Model.TongTienMatRut)} - Thời gian rút: {DateTime.Now.ToShortTimeString()}," ?? "";
+            }
+
+            var result = await HttpClient.PostAsJsonAsync($"https://localhost:7053/api/GiaoCas/KetCa/{IdCa}", Model);
+            if (result.IsSuccessStatusCode)
+            {
+                await Swal.FireAsync("Thông báo", result.Content.ReadFromJsonAsync<Response>().Result.Message, SweetAlertIcon.Success);
+                Navigation.NavigateTo("/admin", true);
+            }
+            else
+            {
+                await Swal.FireAsync("", result.Content.ReadFromJsonAsync<Response>().Result.Message, SweetAlertIcon.Error);
+            }
+        } 
+    }
+
+    private async Task ChangeGhiChuPhatSinh(ChangeEventArgs e)
+    {
+        Model.GhiChuPhatSinh = e.Value.ToString();
+    }
+
+    private async Task ChangeKetCa(ChangeEventArgs e)
+    {
+        if (e.Value?.ToString() == "True")
+        {
+            CaCuoiNgay = true;
+            KetCaVaReset = true;
+        }
+        else
+        {
+            CaCuoiNgay = false;
+            KetCaVaReset = false;
+            Model.TongTienMatRut = 0;
+            Model.TongTienMatCuoiCa = TongKeKhai;
+        }
+    }
+
+    private async Task ChangeKetCaReset(ChangeEventArgs e)
+    {
+        if (e.Value?.ToString() == "True")
+        {
+            KetCaVaReset = true;
+        }
+        else
+        {
+            KetCaVaReset = false;
+            Model.TongTienMatRut = 0;
+            Model.TongTienMatCuoiCa = TongKeKhai;
+        }
+    }
+
+    private async Task ChangTienRut(ChangeEventArgs e)
+    {
+        if (!Regex.IsMatch(e.Value.ToString()))
+        {
+            await Swal.FireAsync("Thông báo", "Tiền Phải Là Số Vui Lòng Nhập Lại", SweetAlertIcon.Warning);
+            Model.TongTienMatRut = 0;
+        }
+        else
+        {
+            if (float.Parse(e.Value.ToString()) < 0)
+            {
+                await Swal.FireAsync("Thông báo", "Tổng Tiền Kê Khai Không Được Âm", SweetAlertIcon.Warning);
+                Model.TongTienMatRut = 0;
+            }
+            else
+            {
+                if (float.Parse(e.Value.ToString()) < 0)
+                {
+                    await Swal.FireAsync("Thông báo", "Tiền Mặt Rút Không Được Âm", SweetAlertIcon.Warning);
+                }
+                else
+                {
+                    Model.TongTienMatRut = float.Parse(e.Value.ToString());
+                    if (TongKeKhai == 0)
+                    {
+                        await Swal.FireAsync("Thông Báo", "Bạn Chưa Kê Khai Tiền Cuối Ca", SweetAlertIcon.Warning);
+                        Model.TongTienMatRut = 0;
+                    }
+                    else if (Model.TongTienMatRut >= Model.TongTienMatCuoiCa && CaCuoiNgay != true)
+                    {
+                        await Swal.FireAsync("Thông Báo", "Không Thể Đáp Ứng Số Tiền Muốn Rút", SweetAlertIcon.Warning);
+                        Model.TongTienMatRut = 0;
+                        Model.TongTienMatCuoiCa = TongKeKhai;
+                    }
+                    else
+                    {
+                        Model.TongTienMatCuoiCa = TongKeKhai - Model.TongTienMatRut;
+                    }
+                }
+            }
+        }
+
+       
+
+    }
+}

@@ -1,0 +1,333 @@
+﻿@page "/admin/khachhang"
+@page "/admin/khachhang/page/{page:int}"
+@using MinkyShopProject.Data.Models
+@inject SweetAlertService Swal;
+@inject HttpClient HttpClient;
+@inject IJSRuntime JSRuntime
+<PageTitle>Khách Hàng</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-3">
+                            <select class="js-choice-size" @onchange='async (ui) =>{ Filter.Size = int.TryParse(ui.Value?.ToString(), out int numberLocal) ? int.Parse(ui.Value.ToString() ?? "") : 2; await Reload(); }'>
+                                <option value="2">2 kết quả</option>
+                                @for (int i = 1; i < 5; i++)
+                                {
+                                    var index = i * 5;
+                                    <option value="@index">@index kết quả</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <input class="form-control" placeholder="Nhập tên hoặc số điện thoại khách hàng" @oninput='(ui) => Filter.Ten = ui.Value?.ToString() ?? ""' @onchange="async() => { Page = 1; await Reload(); }" />
+                        </div>
+                    </div>
+                    <EditForm Model="khachhang" class="row gy-2 mb-3" OnSubmit="AddOrUpdateAsync">
+                        <DataAnnotationsValidator></DataAnnotationsValidator>
+                        <div class="col-12 mt-2 text-end">
+                            @if (Show)
+                            {
+                                if(khachhang.Id != Guid.Empty)
+                                {
+                                    <button class="btn btn-warning btn-sm me-3" @onclick="() => khachhang = new KhachHangThemVaSuaModel()">Hủy Chỉnh Sửa</button>
+                                    <button class="btn btn-primary btn-sm me-3" type="submit">Lưu Dữ Liệu</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-primary btn-sm me-3" type="submit">Lưu Dữ Liệu</button>
+                                }
+                            }
+                            <button class="btn btn-@(Show ? "danger" : "success") btn-sm" type="button" @onclick="() => { Show = !Show; khachhang = new KhachHangThemVaSuaModel(); }">@(!Show ? "Thêm Dữ Liệu" : "Ẩn")</button>
+                        </div>
+                        @if(Show){
+                            <div class="row mb-3 gy-3">
+                                <div class="col-6">
+                                    <label>Tên Khách hàng <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" @bind-value="khachhang.Ten">
+                                </div>
+                                <div class="col-6">
+                                    <label>Ngày sinh</label>
+                                    <input type="date" class="form-control" @bind-value="khachhang.NgaySinh">
+                                </div>
+                                <div class="col-6">
+                                    <label>Gmail</label>
+                                    <input type="email" class="form-control" @bind-value="khachhang.Email">
+                                </div>
+                                <div class="col-6">
+                                    <label>Địa chỉ</label>
+                                    <input type="text" class="form-control" @bind-value="khachhang.DiaChi">
+                                </div>
+                                <div class="col-6">
+                                    <label>Số điện thoại <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" @bind-value="khachhang.Sdt">
+                                </div>
+                                <div class="col-6">
+                                    <label>Giới tính</label>
+                                    <div class="d-flex">
+                                        <div class="form-check me-3">
+                                            <input class="form-check-input" type="radio" name="flexRadioDefault2" @onclick="() => khachhang.GioiTinh = true" checked>
+                                            <label class="custom-control-label">Nam</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="flexRadioDefault2" @onclick="() => khachhang.GioiTinh = false">
+                                            <label class="custom-control-label">Nữ</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </EditForm >
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle text-center">
+                            <thead>
+                            <tr>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-Ten" ? "+Ten" : "-Ten"; await Reload(); }'>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Tên</span>
+                                        @if (Filter.Sort != "-Ten")
+                                        {
+                                            <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                        }
+                                        else
+                                        {
+                                            <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                        }
+                                    </div>
+                                </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-DiaChi" ? "+DiaChi" : "-DiaChi"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Địa Chỉ</span>
+                                            @if (Filter.Sort != "-DiaChi")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-NgaySinh" ? "+NgaySinh" : "-NgaySinh"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Ngày Sinh</span>
+                                            @if (Filter.Sort != "-NgaySinh")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-Sdt" ? "+Sdt" : "-Sdt"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Số Điện Thoại</span>
+                                            @if (Filter.Sort != "-Sdt")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-GioiTinh" ? "+GioiTinh" : "-GioiTinh"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Giới Tính</span>
+                                            @if (Filter.Sort != "-GioiTinh")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-Email" ? "+Email" : "-Email"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Email</span>
+                                            @if (Filter.Sort != "-Email")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-NgayTao" ? "+NgayTao" : "-NgayTao"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Ngày Tạo</span>
+                                            @if (Filter.Sort != "-NgayTao")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Số lần mua</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                                @if (KhachHangs == null)
+                                {
+                                    <tr>
+                                        <td colspan="6">
+                                            <div class="spinner-grow text-primary" role="status">
+                                                <span class="sr-only">Loading...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    if (KhachHangs.Data.Content.Count() > 0)
+                                    {
+                                        foreach (var x in KhachHangs.Data.Content.Select((Value, Index) => (Index, Value)))
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <span class="text-secondary text-xs font-weight-bold">@x.Value.Ten</span>
+                                                </td>
+                                                <td>
+                                                    <span class="text-secondary text-xs font-weight-bold">@x.Value.DiaChi</span>
+                                                </td>
+                                                <td>
+                                                    <span class="text-secondary text-xs font-weight-bold">@x.Value.NgaySinh.ToShortDateString()</span>
+                                                </td>
+                                                <td>
+                                                    <span class="text-secondary text-xs font-weight-bold">@x.Value.Sdt</span>
+                                                </td>
+                                                <td>
+                                                    <span class="text-secondary text-xs font-weight-bold">@(x.Value.GioiTinh ? "Nam" : "Nữ")</span>
+                                                </td>
+                                                <td>
+                                                    <span class="text-secondary text-xs font-weight-bold">@x.Value.Email</span>
+                                                </td>
+                                                <td>
+                                                    <span class="text-secondary text-xs font-weight-bold">@x.Value.NgayTao</span>
+                                                </td>
+                                                <td>
+                                                    <span class="text-secondary text-xs font-weight-bold">@x.Value.SoLanMua</span>
+                                                </td>
+                                                <td class="text-sm">
+                                                    <a href="javascript:;" class="mx-3" data-bs-toggle="tooltip" data-bs-original-title="Edit product" @onclick="() => { khachhang = Helper.ConvertJson<KhachHangThemVaSuaModel>(x.Value); Show = true; }">
+                                                        <i class="fas fa-user-edit text-warning" aria-hidden="true"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="10" class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Không Có Dữ Liệu</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <MinkyShopProject.Admin.Shared.PaginationComponent Model="KhachHangs" Url="admin/khachhang" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int Page { get; set; }
+
+    Uri Url = new Uri("https://localhost:7053/api/khachhang");
+
+    KhachHangQueryModel Filter = new KhachHangQueryModel() { Size = 5, Sort = "-NgayTao" };
+
+    KhachHangThemVaSuaModel khachhang = new KhachHangThemVaSuaModel();
+
+    ResponsePagination<KhachHangModel>? KhachHangs;
+
+    bool Show = false;
+
+    protected async override Task OnParametersSetAsync()
+    {
+        await Reload();
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("choiceLoad", "{'searchEnabled': false}", ".js-choice-size");
+        }
+    }
+
+
+    async Task DeleteAsync(Guid id)
+    {
+        var confirm = await Swal.FireAsync(new SweetAlertOptions { Text = "Bạn Có Chắc Muốn Xóa", ShowConfirmButton = true, ShowCancelButton = true, Icon = SweetAlertIcon.Warning });
+
+        if (string.IsNullOrEmpty(confirm.Value)) return;
+        var result = await HttpClient.DeleteAsync(Url + "/" + id + "/Delete");
+
+        if (result.IsSuccessStatusCode)
+        {
+            await Reload();
+            await Swal.FireAsync("Thông Báo", "Xóa thành công", SweetAlertIcon.Success);
+        }
+    }
+
+    async Task AddOrUpdateAsync(EditContext context)
+    {
+        if (context.Validate())
+        {
+            var confirm = await Swal.FireAsync(new SweetAlertOptions { Text = "Bạn Có Chắc Muốn Thêm", ShowConfirmButton = true, ShowCancelButton = true, Icon = SweetAlertIcon.Warning });
+
+            if (string.IsNullOrEmpty(confirm.Value)) return;
+
+            try
+            {
+                var s = Url.AddQuery("id", khachhang.Id.ToString());
+                var result = khachhang.Id == Guid.Empty ? await HttpClient.PostAsJsonAsync<KhachHangThemVaSuaModel>(Url + "/Create", khachhang) : await HttpClient.PutAsJsonAsync<KhachHangThemVaSuaModel>(new Uri(Url + "/Update" + s.Query), khachhang);
+
+                if (result.IsSuccessStatusCode)
+                {
+                    await Reload();
+                    khachhang = new KhachHangThemVaSuaModel();
+                    await Swal.FireAsync("Thông Báo", "Thành công", SweetAlertIcon.Success);
+                }
+                else
+                {
+                    await Swal.FireAsync("", "Khách Hàng Đã Tồn Tại", SweetAlertIcon.Error);
+                }
+            }
+            catch (Exception)
+            {
+                await Swal.FireAsync("", "Khách Hàng Đã Tồn Tại", SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            await Swal.FireAsync("", string.Join("<br>", context.GetValidationMessages().Select(c => c)), SweetAlertIcon.Error);
+        }
+    }
+    
+
+    async Task Reload()
+    {
+        if (Page == 0) Page = 1;
+        var s = Url.AddQuery("page", Page.ToString()).AddQuery("size", Filter.Size.ToString() ?? "5").AddQuery("Ten", Filter.Ten ?? "").AddQuery("sort", Filter.Sort);
+        KhachHangs = await HttpClient.GetFromJsonAsync<ResponsePagination<KhachHangModel>>(new Uri(Url + "/get" + s.Query));
+    }
+}

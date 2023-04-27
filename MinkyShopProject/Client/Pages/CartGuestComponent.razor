@@ -1,0 +1,290 @@
+﻿@page "/cartguest"
+@using MinkyShopProject.Data.Models;
+@inject IJSRuntime JSRuntime
+@inject HttpClient HttpClient
+@inject SweetAlertService Swal
+@inject Blazored.SessionStorage.ISessionStorageService Session
+@inject NavigationManager NavigationManager;
+
+<main class="bg_gray">
+    <div class="container margin_30">
+        <!-- /page_header -->
+        <table class="table table-striped cart-list">
+            <thead>
+                <tr>
+                    <th style="width: 40%">
+                        Sản Phẩm
+                    </th>
+                    <th style="width: 20%">
+                        Giá
+                    </th>
+                    <th style="width: 20%">
+                        Số Lượng
+                    </th>
+                    <th style="width: 20%">
+                        Tổng Tiền
+                    </th>
+                    <th>
+
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (HoaDon != null && HoaDon.HoaDonChiTiets != null)
+                {
+                    @foreach (var x in HoaDon.HoaDonChiTiets.Select((v, i) => (i, v)))
+                    {
+                        <tr>
+                            <td>
+                                <div class="thumb_cart">
+                                    <img src="@x.v.BienThe?.Anh" data-src="@x.v.BienThe?.Anh" class="lazy" alt="Image">
+                                </div>
+                                <div style="display: flex; flex-direction: column">
+                                    <span class="item_cart">@x.v.BienThe?.SanPham?.Ten</span>
+                                    @if(x.v.BienThe != null && x.v.BienThe.BienTheChiTiets != null)
+                                    {
+                                        <p style="margin: 5px 0 0 10px">@string.Join(" + ", x.v.BienThe.BienTheChiTiets.Select(c => c.GiaTri?.Ten))</p>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <strong>@Helper.FormatMoney(x.v.DonGia)</strong>
+                            </td>
+                            <td>
+                                <p>Kho : @x.v.SoLuongGoc</p>
+                                <div class="numbers-row">
+                                    <input type="text" @bind="@x.v.SoLuong" id="quantity_1" class="qty2" name="quantity_1">
+                                    <div class="inc button_inc" @onclick="() => x.v.SoLuong += 1">+</div>
+                                    <div class="dec button_inc" @onclick="() => { if (x.v.SoLuong > 1){ x.v.SoLuong -= 1; } }">-</div>
+                                </div>
+                            </td>
+                            <td>
+                                <strong>@Helper.FormatMoney(x.v.DonGia * x.v.SoLuong)</strong>
+                            </td>
+                            <td class="options">
+                                <button @onclick="() => XoaSanPham(x.i)"><i class="ti-trash"></i></button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr style="text-align: center; font-weight: bold">
+                        <td colspan="4">Chưa có sản phẩm</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="row add_top_30 flex-sm-row-reverse cart_actions">
+            <div class="col-sm-4 text-right">
+                <button type="button" class="btn_1 gray" @onclick="CapNhat">Cập Nhật Giỏ Hàng</button>
+            </div>
+            <div class="col-sm-8">
+                <div class="apply-coupon">
+                    <div class="form-group form-inline">
+                        <input type="text" name="coupon-code" value='@HoaDon.VoucherLogs?[0].Voucher?.Ten' @onchange='e => maVoucher = e.Value?.ToString() ?? ""' placeholder="Mã giảm giá" class="form-control">
+                        @if(HoaDon.VoucherLogs == null)
+                        {
+                            <button type="button" class="btn_1 outline" @onclick="ApDungVoucher">Áp Dụng Mã Giảm Giá</button>
+                        }
+                        @if(HoaDon.VoucherLogs != null && HoaDon.VoucherLogs.Any())
+                        {
+                            <button style="margin-left: 3px" class="btn_1" @onclick="() => HoaDon.VoucherLogs = null">Xóa</button>
+                        }
+                        <NavLink class="btn_1 outline" href="/sanpham">Quay về mua hàng</NavLink>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /cart_actions -->
+
+    </div>
+    <!-- /container -->
+
+    <div class="box_cart">
+        <div class="container">
+            <div class="row justify-content-between">
+                <div class="col-lg-7 col-md-6" style="text-align: start">
+                    <div class="step first">
+                        <h3>Thông Tin Cá Nhân</h3>
+                        <div class="tab-content checkout">
+                            <div>
+                                <div class="form-group">
+                                    <input type="text" class="form-control" placeholder="Tên Người Nhận" @bind="HoaDon.TenNguoiNhan">
+                                </div>
+                                <!-- /row -->
+                                <div class="form-group">
+                                    <input type="text" class="form-control" placeholder="Địa Chỉ" @bind="HoaDon.DiaChi">
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" class="form-control" placeholder="Số Điện Thoại" @bind="HoaDon.Sdt">
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" class="form-control" placeholder="Ghi Chú" @bind="HoaDon.GhiChuGiaoHang">
+                                </div>
+                                <div style="display: flex; justify-content: space-between">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="customCheck1" @onchange='async e => { HoaDon.LoaiDonHang = HoaDon.LoaiDonHang == 1 ? 0 : 1; HoaDon.TienShip = HoaDon.TienShip == 10000 ? 0 : 10000; }'>
+                                        <label class="custom-control-label" for="customCheck1">Nhận tại cửa hàng</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- /tab_1 -->
+                        </div>
+                    </div>
+                    <!-- /step -->
+                </div>
+                <div class="col-xl-4 col-lg-4 col-md-6">
+                    <ul>
+                        <li>
+                            <span>Tổng Tiền (@HoaDon.HoaDonChiTiets?.Count())</span> @Helper.FormatMoney(HoaDon.HoaDonChiTiets?.Sum(c => c.DonGia * c.SoLuong))
+                        </li>
+                        <li>
+                            <span>Tiền Ship</span> @Helper.FormatMoney(HoaDon.TienShip)
+                        </li>
+                        @if(HoaDon.VoucherLogs != null && HoaDon.VoucherLogs.Any())
+                        {
+                            <li>
+                                <span>Giảm Giá</span> @Helper.FormatMoney(HoaDon.VoucherLogs[0].SoTienGiam)
+                            </li>
+                        }
+                        <li style="font-size: 1rem">
+                            @if(HoaDon.VoucherLogs != null && HoaDon.VoucherLogs.Any())
+                            {
+                                <span>Khách Phải Trả</span> @Helper.FormatMoney(HoaDon.VoucherLogs[0].TienSauKhiGiam + HoaDon.TienShip)
+                            }
+                            else
+                            {
+                                <span>Khách Phải Trả</span> @Helper.FormatMoney(HoaDon.HoaDonChiTiets?.Sum(c => c.DonGia * c.SoLuong) + HoaDon.TienShip + HoaDon.LoaiDonHang == 1 ? 0 : 10000)
+                            }
+                        </li>
+                    </ul>
+                    <button class="btn_1 full-width cart" @onclick="ThemVaoGioHang">Đặt Hàng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /box_cart -->
+
+</main>
+
+@code{
+    private HoaDonCreateModel HoaDon = new HoaDonCreateModel();
+
+    KhachHangModel KhachHang = new KhachHangModel() { Id = Guid.NewGuid() };
+
+    string maVoucher = "";
+
+    protected async override Task OnInitializedAsync()
+    {
+        HoaDon.TienShip = 10000;
+        HoaDon.LoaiDonHang = 1;
+        var result = await Session.GetItemAsync<HoaDonCreateModel>("cart");
+        if(result != null)
+        {
+            HoaDon = result;
+        }
+        else
+        {
+            HoaDon = new HoaDonCreateModel();
+        }
+    }
+
+    async Task CapNhat()
+    {
+        await Session.SetItemAsync<HoaDonCreateModel>("cart", HoaDon);
+        await Swal.FireAsync("", "Cập Nhật Thành Công", SweetAlertIcon.Success);
+    }
+
+    async Task ThemVaoGioHang()
+    {
+        if (HoaDon.TenNguoiNhan == null || string.IsNullOrEmpty(HoaDon.TenNguoiNhan) || HoaDon.DiaChi == null || string.IsNullOrEmpty(HoaDon.DiaChi) || HoaDon.Sdt == null || string.IsNullOrEmpty(HoaDon.Sdt))
+        {
+            await Swal.FireAsync("", "Vui Lòng Nhập Đủ Các Trường", SweetAlertIcon.Error);
+            return;
+        }
+
+        var confirm = await Swal.FireAsync(new SweetAlertOptions { Text = "Bạn Có Chắc Muốn Thêm Hóa Đơn", ShowConfirmButton = true, ShowCancelButton = true, Icon = SweetAlertIcon.Warning });
+
+        if (string.IsNullOrEmpty(confirm.Value)) return;
+
+        if (HoaDon != null && HoaDon.HoaDonChiTiets != null && HoaDon.HoaDonChiTiets.Any(c => c.SoLuong > c.SoLuongGoc))
+        {
+            await Swal.FireAsync("", "Số Lượng Không Được Vượt Quá Số Lượng Sản Phẩm", SweetAlertIcon.Error);
+        }
+        else
+        {
+            if (HoaDon != null && HoaDon.HoaDonChiTiets != null)
+            {
+                HoaDon.LoaiDonHang = 2;
+                HoaDon.TrangThaiGiaoHang = 0;
+                HoaDon.TienShip = 10000;
+                HoaDon.TongTien = HoaDon.HoaDonChiTiets.Sum(c => c.SoLuong * c.DonGia);
+            }
+            var status = await HttpClient.PostAsJsonAsync("https://localhost:7053/api/HoaDon", HoaDon);
+
+            if (status.IsSuccessStatusCode)
+            {
+                await Session.RemoveItemAsync("cart");
+                await Swal.FireAsync("", "Tạo Hóa Đơn Thành Công", SweetAlertIcon.Success);
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                await Swal.FireAsync("", "Tạo Hóa Đơn Thất Bại", SweetAlertIcon.Error);
+            }
+        }
+    }
+
+    async Task XoaSanPham(int index)
+    {
+        var confirm = await Swal.FireAsync(new SweetAlertOptions { Text = "Bạn Có Chắc Muốn Xóa", ShowConfirmButton = true, ShowCancelButton = true, Icon = SweetAlertIcon.Warning });
+
+        if (string.IsNullOrEmpty(confirm.Value)) return;
+
+        HoaDon.HoaDonChiTiets.RemoveAt(index);
+
+        await Session.SetItemAsync<HoaDonCreateModel>("cart", HoaDon);
+
+        await Swal.FireAsync("", "Xóa Thành Công", SweetAlertIcon.Success);
+    }
+
+    async Task ApDungVoucher()
+    {
+        try
+        {
+            var voucher = await HttpClient.GetFromJsonAsync<ResponseObject<VoucherModel>>("https://localhost:7053/api/Voucher/" + maVoucher);
+            if (voucher != null && voucher.Data.Id != Guid.Empty)
+            {
+                if (voucher.Data.NgayKetThuc < DateTime.Now || voucher.Data.SoLuong <= 0 || HoaDon.HoaDonChiTiets.Sum(c => c.SoLuong * c.DonGia) < voucher.Data.SoTienCan)
+                {
+                    await Swal.FireAsync("", "Voucher Hết Hạn Sử Dụng Hoặc Hết Lượt Sử Dụng Hoặc Không Đủ Điều Kiện", SweetAlertIcon.Error);
+                }
+                else
+                {
+                    if (voucher.Data.HinhThucGiamGia == 1)
+                    {
+                        HoaDon.TongTien = HoaDon.HoaDonChiTiets.Sum(c => c.SoLuong * c.DonGia);
+                        HoaDon.VoucherLogs = new List<VoucherLogModel>() { new VoucherLogModel() { IdVoucher = voucher.Data.Id, SoTienGiam = voucher.Data.SoTienGiam, TienTruocKhiGiam = HoaDon.TongTien, TienSauKhiGiam = HoaDon.TongTien - voucher.Data.SoTienGiam, Voucher = voucher.Data } };
+                    }
+                    else
+                    {
+                        HoaDon.TongTien = HoaDon.HoaDonChiTiets.Sum(c => c.SoLuong * c.DonGia);
+                        var after = HoaDon.TongTien - (HoaDon.TongTien * voucher.Data.SoTienGiam / 100);
+                        HoaDon.VoucherLogs = new List<VoucherLogModel>() { new VoucherLogModel() { IdVoucher = voucher.Data.Id, SoTienGiam = HoaDon.TongTien - after, TienTruocKhiGiam = HoaDon.TongTien, TienSauKhiGiam = after, Voucher = voucher.Data } };
+                    }
+                }
+            }
+            else
+            {
+                await Swal.FireAsync("", "Voucher Không Tồn Tại", SweetAlertIcon.Error);
+            }
+        }
+        catch (Exception)
+        {
+            await Swal.FireAsync("", "Voucher Không Tồn Tại", SweetAlertIcon.Error);
+        }
+    }
+}
+

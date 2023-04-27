@@ -1,0 +1,166 @@
+﻿@page "/admin/variant"
+<PageTitle>Sản Phẩm</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-12 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="example-text-input" class="form-control-label">Sản Phẩm</label>
+                                <div class="position-relative">
+                                    <input class="form-control" type="text" @bind="SanPham.Ten">
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-primary" @onclick="() => {
+                                if(ThuocTinhModelsTemplate.Count < 1 || !string.IsNullOrEmpty(ThuocTinhModelsTemplate[ThuocTinhModelsTemplate.Count - 1].Ten) || !ThuocTinhModelsTemplate.Any(c => !c.GiaTris.Any())){
+                                showGiaTri.Add(false); ThuocTinhs.Add(new ThuocTinh()); ThuocTinhModelsTemplate.Add(new Data.Models.ThuocTinhModel());
+                            } }">
+                                Thêm Thuộc Tính
+                            </button>
+                            <button class="btn btn-sm btn-warning" @onclick="AddAsync">Thêm Sản Phẩm</button>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="example-text-input" class="form-control-label">Nhóm Sản Phẩm</label>
+                                <div class="position-relative">
+                                    <input class="form-control" type="text" value="@(SanPham.NhomSanPham?.NhomSanPhamEntity?.Ten + " / " + SanPham.NhomSanPham?.Ten)" @oninput='e => { if(NhomSanPhamModels != null && NhomSanPhamModelsParent != null){ NhomSanPhamModels.Data.Content = NhomSanPhamModelsParent.FindAll(c => Helper.LowerText(c.Ten).Contains(Helper.LowerText(e.Value?.ToString() ?? "")) || Helper.LowerText(c.NhomSanPhamEntity.Ten).Contains(Helper.LowerText(e.Value?.ToString() ?? ""))); } }' @onfocus="() => showNhomSanPham = true" @onfocusout="() => showNhomSanPham = false">
+                                    <NavLink href="admin/group">
+                                        <i class="fa fa-plus position-absolute top-50 end-0 translate-middle-y"></i>
+                                    </NavLink>
+                                </div>
+                                <div class="d-flex flex-wrap position-relative pb-2">
+                                    <div class="list-group position-absolute w-100 top-0 list" style="z-index: 1">
+                                        @if (showNhomSanPham)
+                                        {
+                                            if (NhomSanPhamModels?.Data.Content != null)
+                                            {
+                                                foreach (var x in NhomSanPhamModels.Data.Content.Where(c => c.TrangThai == 0).Select((Value, Index) => (Index, Value)))
+                                                {
+                                                    if (x.Index < 5)
+                                                    {
+                                                        <button class="list-group-item list-group-item-action text-sm" aria-current="true" @onmousedown="() => { SanPham.NhomSanPham = x.Value; SanPham.IdNhomSanPham = x.Value.Id; }">
+                                                            @x.Value.NhomSanPhamEntity?.Ten / @x.Value.Ten
+                                                        </button>
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @if (ThuocTinhModelsTemplate != null)
+                        {
+                            @foreach (var x in ThuocTinhModelsTemplate.Where(c => c.TrangThai == 0).Select((Value, Index) => (Index, Value)))
+                            {
+                                <div class="col-md-12" @onfocusout="() => { showGiaTri[x.Index] = false; }">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-group mb-0">
+                                                <label for="example-text-input" class="form-control-label">Thuộc Tính</label>
+                                                <input class="form-control" @attributes='new Dictionary<string, object>(){ { ThuocTinhs[x.Index].Disabled ? "disabled" : "template", "" } }' type="text"
+                                               @oninput='(ui) => { 
+                                                if(ThuocTinhModels != null && ThuocTinhModelsParent != null){ 
+                                                        x.Value.Ten = ui.Value?.ToString() ?? ""; 
+                                                        ThuocTinhModels.Data.Content = ThuocTinhModelsParent.FindAll(c => c.Ten.ToLower().Contains(ui.Value?.ToString()?.ToLower() ?? "")); }else{ x.Value.Ten = ui.Value?.ToString() ?? ""; } }' value="@x.Value.Ten"
+                                               @onfocus="() => { ThuocTinhs[x.Index].Show = true; }"
+                                               @onfocusout="() => { ThuocTinhs[x.Index].Show = false; }">
+                                            </div>
+                                            <div class="d-flex flex-wrap position-relative pb-2">
+                                                @if (ThuocTinhs[x.Index].Show)
+                                                {
+                                                    <div class="list-group position-absolute w-100 top-0" style="z-index: 1">
+                                                        @if (ThuocTinhModels?.Data.Content != null)
+                                                        {
+                                                            @foreach (var y in ThuocTinhModels.Data.Content.Where(c => c.TrangThai == 0))
+                                                            {
+                                                                <button class="list-group-item list-group-item-action text-sm"
+                                                    @onmousedown="() => { ThuocTinhModelsTemplate[x.Index] = y; ThuocTinhModels.Data.Content.Remove(y); if(y.Id != Guid.Empty){ ThuocTinhs[x.Index].Disabled = true; }; }">
+                                                                    @y.Ten
+                                                                </button>
+                                                            }
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <div class="col-5">
+                                            <div class="form-group mb-0">
+                                                <label for="example-text-input" class="form-control-label">Giá Trị</label>
+                                                <div class="position-relative">
+                                                    <div class="d-flex flex-wrap position-absolute top-50 end-0 translate-middle-y">
+                                                        @if (x.Value.GiaTriTemplates != null)
+                                                        {
+                                                            @foreach (var y in x.Value.GiaTriTemplates.Where(c => c.TrangThai))
+                                                            {
+                                                                <span class="badge badge-primary me-2 mt-0" style="cursor: pointer"
+                                                      @onmousedown="() => {  x.Value.GiaTriTemplates.Remove(y); if(y.Id != Guid.Empty){ x.Value.GiaTris?.Add(y); } }">@y.Ten</span>
+                                                            }
+                                                        }
+                                                    </div>
+                                                    <input class="form-control" type="text" @onfocus="() => { showGiaTri[x.Index] = true; }"
+                                                   @oninput='(ui) => { if(x.Value.GiaTriParent != null && x.Value.GiaTriParent.Any()){ GiaTri = ui.Value?.ToString() ?? ""; x.Value.GiaTris = x.Value.GiaTriParent.FindAll(c => c.Ten.ToLower().Trim().Contains(GiaTri.ToLower().Trim())); }else{ GiaTri = ui.Value?.ToString() ?? ""; }; }'
+                                                   @onkeyup='(KeyboardEventArgs ui) => { if(ui.Code == "Enter"){ 
+                                                    if(!(string.IsNullOrEmpty(GiaTri.Trim()) || x.Value.GiaTriTemplates.Any(c => c.Ten.ToTitleCase() == GiaTri.ToTitleCase()) || GiaTri.CheckCharacterSpecial())){
+x.Value.GiaTriTemplates?.Add(new Data.Models.GiaTriModel(){ Ten = GiaTri, TrangThai = true });
+}
+
+
+} } '>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex flex-wrap position-relative pb-2">
+                                                <div class="list-group position-absolute w-100 top-0" style="z-index: 1">
+                                                    @if (showGiaTri[x.Index])
+                                                    {
+                                                        if (x.Value.GiaTris != null)
+                                                        {
+                                                            @foreach (var y in x.Value.GiaTris.Where(c => c.TrangThai).Select((v, i) => (i, v)))
+                                                            {
+                                                                @if(y.i < 5)
+                                                                {
+                                                                    if (x.Value.GiaTriParent != null)
+                                                                    {
+                                                                        foreach (var z in x.Value.GiaTriParent)
+                                                                        {
+                                                                            if (y.v.Id == z.Id && z.TrangThai)
+                                                                            {
+                                                                                <button class="list-group-item list-group-item-action text-sm" aria-current="true" @onmousedown="() => {  x.Value.GiaTriTemplates?.Add(y.v); x.Value.GiaTris.Remove(y.v); } ">
+                                                                                    @y.v.Ten
+                                                                                </button>
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-1">
+                                            <div class="form-group">
+                                                <label for="example-text-input" class="form-control-label">&nbsp;</label><br>
+                                                <button class="btn btn-danger"
+                                                @onclick="() => { ThuocTinhs.RemoveAt(ThuocTinhs.Count - 1); ThuocTinhModelsTemplate.Remove(x.Value);
+                                                    if(x.Value.Id != Guid.Empty){
+                                                        ThuocTinhModels?.Data.Content.Add(x.Value); }
+                                                    }">
+                                                    <i class="fa fa-trash" style="cursor: pointer"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

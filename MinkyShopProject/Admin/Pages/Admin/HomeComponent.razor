@@ -1,0 +1,188 @@
+﻿@page "/admin";
+@using MinkyShopProject.Data.Models
+@inject SweetAlertService Swal
+@inject HttpClient HttpClient
+@inject IJSRuntime JSRuntime
+<PageTitle>Trang Chủ</PageTitle>
+
+<!-- End Navbar -->
+<div class="container-fluid py-4">n
+	<div class="row">
+		<div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+			<div class="card">
+				<div class="card-body p-3">
+					<div class="row">
+						<div class="col-8">
+							<div class="numbers">
+								<p class="text-sm mb-0 text-uppercase font-weight-bold">Tổng tiền ngày hôm nay</p>
+								<h5 class="font-weight-bolder">
+									@ThongKeTongTienNgay.Data.TongTienTatCa.ToString("N0") VND
+								</h5>
+                                <p class="mb-0">
+									@if (ThongKeTongTienHomQua.Data.TongTienTatCa > 0 && ThongKeTongTienNgay.Data.TongTienTatCa > 0)
+									{
+										<span class="text-@(Helper.CalculateChange((long)ThongKeTongTienHomQua.Data.TongTienTatCa, (long)ThongKeTongTienNgay.Data.TongTienTatCa) > 0 ? "success" : "danger") text-sm font-weight-bolder">@Helper.DoubleToPercentageString(ThongKeTongTienHomQua.Data.TongTienTatCa > 0 ? Helper.CalculateChange((long)ThongKeTongTienHomQua.Data.TongTienTatCa, (long)ThongKeTongTienNgay.Data.TongTienTatCa) : -1) so với hôm qua</span>
+									}
+								</p>
+                                <p class="mb-0">
+									<span class="text-sm mb-0 text-uppercase font-weight-bold">
+                                        Đã bán được @ThongKeTongTienNgay.Data.TongDonBan đơn hàng
+                                    </span>
+                                </p>
+                                <p class="mb-0">
+									<span class="text-sm mb-0 text-uppercase font-weight-bold">
+                                        Có @ThongKeTongTienNgay.Data.TongDonHuy đã bị hủy
+                                    </span>
+                                </p>
+							</div>
+						</div>
+						<div class="col-4 text-end">
+							<div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
+								<i class="ni ni-money-coins text-lg opacity-10" aria-hidden="true"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+			<div class="card">
+				<div class="card-body p-3">
+					<div class="row">
+						<div class="col-8">
+							<div class="numbers">
+								<p class="text-sm mb-0 text-uppercase font-weight-bold">Tổng tiền tuần này</p>
+								<h5 class="font-weight-bolder">
+									@ThongKeTongTienTuan.Data.TongTienTatCa.ToString("N0") VND
+								</h5>
+                                <p class="mb-0">
+									<span class="text-@(Helper.CalculateChange((long)ThongKeTongTienTuanTruoc.Data.TongTienTatCa, (long)ThongKeTongTienTuan.Data.TongTienTatCa) > 0 ? "success" : "danger") text-sm font-weight-bolder">@Helper.DoubleToPercentageString(ThongKeTongTienTuanTruoc.Data.TongTienTatCa > 0 ? Helper.CalculateChange((long)ThongKeTongTienTuanTruoc.Data.TongTienTatCa, (long)ThongKeTongTienTuan.Data.TongTienTatCa) : -1)</span>
+                                    so với tuần trước
+                                </p>
+                                <p class="mb-0">
+									<span class="text-sm mb-0 text-uppercase font-weight-bold">
+                                        Đã bán được @ThongKeTongTienTuan.Data.TongDonBan đơn hàng
+                                    </span>
+                                </p>
+                                <p class="mb-0">
+									<span class="text-sm mb-0 text-uppercase font-weight-bold">
+                                        Có @ThongKeTongTienTuanTruoc.Data.TongDonHuy đã bị hủy
+                                    </span>
+                                </p>
+							</div>
+						</div>
+						<div class="col-4 text-end">
+							<div class="icon icon-shape bg-gradient-danger shadow-danger text-center rounded-circle">
+								<i class="ni ni-world text-lg opacity-10" aria-hidden="true"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+			<div class="card">
+				<div class="card-body p-3">
+					<div class="row">
+						<div class="col-8">
+							<div class="numbers">
+								<p class="text-sm mb-0 text-uppercase font-weight-bold">Tổng tiền tháng này</p>
+								<h5 class="font-weight-bolder">
+									@ThongKeTongTienThang.Data.TongTienTatCa.ToString("N0") VND
+								</h5>
+                                <p class="mb-0">
+									@{
+										@if(ThongKeTongTienThangTruoc.Data.TongTienTatCa > 0 && ThongKeTongTienThang.Data.TongTienTatCa > 0)
+										{
+											var result = Helper.CalculateChange(ThongKeTongTienThangTruoc.Data.TongTienTatCa > 0 ? (long)ThongKeTongTienThangTruoc.Data.TongTienTatCa : 0, ThongKeTongTienThang.Data.TongTienTatCa > 0 ? (long)ThongKeTongTienThang.Data.TongTienTatCa : 0);
+											<span class="@(result > 0 ? "text-success" : "text-danger") text-sm font-weight-bolder">@Helper.DoubleToPercentageString(ThongKeTongTienThang.Data.TongTienTatCa > 0 ? result : -1)</span>
+										}
+									}
+                                    so với tháng trước
+                                </p>
+                                <p class="mb-0">
+									<span class="text-sm mb-0 text-uppercase font-weight-bold">
+                                        Đã bán được @ThongKeTongTienThang.Data.TongDonBan đơn hàng
+                                    </span>
+                                </p>
+                                <p class="mb-0">
+									<span class="text-sm mb-0 text-uppercase font-weight-bold">
+                                        Có @ThongKeTongTienThangTruoc.Data.TongDonHuy đã bị hủy
+                                    </span>
+                                </p>
+							</div>
+						</div>
+						<div class="col-4 text-end">
+							<div class="icon icon-shape bg-gradient-success shadow-success text-center rounded-circle">
+								<i class="ni ni-paper-diploma text-lg opacity-10" aria-hidden="true"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-xl-3 col-sm-6">
+			<div class="card">
+				<div class="card-body p-3">
+					<div class="row">
+						<div class="col-8">
+							<div class="numbers">
+								<p class="text-sm mb-0 text-uppercase font-weight-bold">Số đơn trong ngày</p>
+								<h5 class="font-weight-bolder">
+									@ThongKeTongTienNgay.Data.TongDonBan
+								</h5>
+								<p class="mb-0">
+									<span class="text-@(Helper.CalculateChange((long)ThongKeTongTienHomQua.Data.TongDonBan, (long)ThongKeTongTienNgay.Data.TongDonBan) > 0 ? "success" : "danger") text-sm font-weight-bolder">@Helper.DoubleToPercentageString(ThongKeTongTienHomQua.Data.TongTienTatCa > 0 ? Helper.CalculateChange((long)ThongKeTongTienHomQua.Data.TongDonBan, (long)ThongKeTongTienNgay.Data.TongDonBan) : -1)</span>
+									so với hôm qua
+								</p>
+							</div>
+						</div>
+						<div class="col-4 text-end">
+							<div class="icon icon-shape bg-gradient-warning shadow-warning text-center rounded-circle">
+								<i class="ni ni-cart text-lg opacity-10" aria-hidden="true"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="row mt-4">
+		<div class="col-lg-7 mb-lg-0 mb-4">
+			<ThongKeTienComponent></ThongKeTienComponent>
+		</div>
+		<div class="col-lg-5">
+			 <ThongKeSanPhamComponent></ThongKeSanPhamComponent> 
+		</div>
+	</div>
+	<div class="row mt-4">
+		<div class="col-lg-12 mb-lg-0 mb-4">
+			<InvoiceComponent></InvoiceComponent>
+		</div>
+	</div>
+</div>
+
+@code {
+	ResponseObject<ThongKeTongTienResult> ThongKeTongTienNgay;
+	ResponseObject<ThongKeTongTienResult> ThongKeTongTienThang;
+	ResponseObject<ThongKeTongTienResult> ThongKeTongTienTuan;
+	ResponseObject<ThongKeTongTienResult> ThongKeTongTienTuanTruoc;
+	ResponseObject<ThongKeTongTienResult> ThongKeTongTienHomQua;
+	ResponseObject<ThongKeTongTienResult> ThongKeTongTienThangTruoc;
+
+	protected async override Task OnInitializedAsync()
+	{
+		await Reload();
+	}
+
+	async Task Reload()
+	{
+		ThongKeTongTienNgay = await HttpClient.GetFromJsonAsync<ResponseObject<ThongKeTongTienResult>>("https://localhost:7053/api/ThongKe/ThongKeTongTienNgayTienThangNam?loaiThongKe=homnay");
+		ThongKeTongTienHomQua = await HttpClient.GetFromJsonAsync<ResponseObject<ThongKeTongTienResult>>("https://localhost:7053/api/ThongKe/ThongKeTongTienNgayTienThangNam?loaiThongKe=homqua");
+		ThongKeTongTienThang = await HttpClient.GetFromJsonAsync<ResponseObject<ThongKeTongTienResult>>("https://localhost:7053/api/ThongKe/ThongKeTongTienNgayTienThangNam?loaiThongKe=thangnay");
+		ThongKeTongTienThangTruoc = await HttpClient.GetFromJsonAsync<ResponseObject<ThongKeTongTienResult>>("https://localhost:7053/api/ThongKe/ThongKeTongTienNgayTienThangNam?loaiThongKe=thangtruoc");
+		ThongKeTongTienTuan = await HttpClient.GetFromJsonAsync<ResponseObject<ThongKeTongTienResult>>("https://localhost:7053/api/ThongKe/ThongKeTongTienNgayTienThangNam?loaiThongKe=7ngaytruoc");
+	    ThongKeTongTienTuanTruoc = await HttpClient.GetFromJsonAsync<ResponseObject<ThongKeTongTienResult>>("https://localhost:7053/api/ThongKe/ThongKeTongTienNgayTienThangNam?loaiThongKe=14ngaytruoc");
+	}
+} 

@@ -1,0 +1,73 @@
+﻿@page "/product"
+@page "/product/page/{page:int}"
+@inject HttpClient HttpClient;
+@using Data.Models;
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        @if(SanPhams == null)
+                        {
+                            <div class="col-md-3 mt-4">
+                                <div class="card" aria-hidden="true">
+                                    <div class="card-img-top bg-dark" />
+                                    <div class="card-body">
+                                        <h5 class="card-title placeholder-glow">
+                                            <span class="placeholder col-6"></span>
+                                        </h5>
+                                        <p class="card-text placeholder-glow">
+                                            <span class="placeholder col-7"></span>
+                                            <span class="placeholder col-4"></span>
+                                            <span class="placeholder col-4"></span>
+                                            <span class="placeholder col-6"></span>
+                                            <span class="placeholder col-8"></span>
+                                        </p>
+                                        <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder col-6"></a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            foreach (var x in SanPhams.Data.Content)
+                            {
+                                <div class="col-md-3 mt-4">
+                                    <div class="card card-blog card-plain">
+                                        <div class="position-relative">
+                                            <NavLink class="d-block blur-shadow-image" href="@($"product/{x.Id}")">
+                                                <img src="@x.Anh" alt="img-blur-shadow" class="img-fluid shadow border-radius-lg p-4">
+                                            </NavLink>
+                                        </div>
+                                        <div class="card-body px-1 py-3">
+                                            <div class="d-flex flex-column">
+                                                <p class="text-gradient text-primary text-bold me-1 mb-0">@(x.Ten?.Length > 20 ? x.Ten.Substring(0, 20) + "..." : x.Ten)</p>
+                                                <p class="m-0 text-bold">@Helper.FormatMoney(x.BienThes?.Min(c => c.GiaBan))</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                    <MinkyShopProject.Admin.Shared.PaginationComponent Model="SanPhams" Url="product"></MinkyShopProject.Admin.Shared.PaginationComponent>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code{
+    [Parameter]
+    public int Page { get; set; }
+
+    ResponsePagination<SanPhamModel>? SanPhams;
+
+    protected async override Task OnParametersSetAsync()
+    {
+        if (Page == 0) Page = 1;
+        SanPhams = await HttpClient.GetFromJsonAsync<ResponsePagination<SanPhamModel>>($"https://localhost:7053/api/SanPham?page={Page}&size=10");
+    }
+}

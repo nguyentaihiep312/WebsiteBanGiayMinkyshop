@@ -1,0 +1,52 @@
+﻿@typeparam T;
+@inject NavigationManager NavigationManager;
+
+@*@if(Model?.Data.TotalPages > 1)
+{
+    <div class="d-flex justify-content-center">
+        <ul class="pagination pagination-primary">
+            @if (Model != null)
+            {
+                @foreach (var i in Enumerable.Range(1, Model.Data.TotalPages))
+                {
+                    <li class="page-item">
+                        <NavLink class=@($"page-link {(i == 1 && !NavigationManager.Uri.ToLower().Contains("page") ? "active" : "") }") href="@($"{NavigationManager.BaseUri}{Url}/page/{i}")">@i</NavLink>
+                    </li>
+                }
+            }
+        </ul>
+    </div>
+}*@
+@if (Model?.Data.TotalPages > 1)
+{
+    <div class="d-flex justify-content-center">
+        <ul class="pagination pagination-primary">
+            @if (Model != null)
+            {
+                @foreach (var i in Enumerable.Range(1, Model.Data.TotalPages))
+                {
+                    @if ((i == 1 || i == Model.Data.TotalPages || Math.Abs(Model.Data.Page - i) <= 2))
+                    {
+                        <li class="page-item">
+                            <NavLink class=@($"page-link {(i == Model.Data.Page ? "active" : "") }") href="@($"{NavigationManager.BaseUri}{Url}/page/{i}")">@i</NavLink>
+                        </li>
+                    }
+                    else if (i == 2 || i == Model.Data.TotalPages - 1)
+                    {
+                        <li class="page-item">
+                            <span class="page-link">...</span>
+                        </li>
+                    }
+                }
+            }
+        </ul>
+    </div>
+}
+
+@code{
+    [Parameter]
+    public ResponsePagination<T>? Model { get; set; }
+
+    [Parameter]
+    public string? Url { get; set; }
+}

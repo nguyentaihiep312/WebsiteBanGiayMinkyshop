@@ -1,0 +1,414 @@
+﻿@page "/sale"
+@layout Shared.EmptyLayout
+
+<div class="container-fluid bg-primary">
+    @if(HoaDons == null)
+    {
+        <div class="row">
+            <div class="card">
+                <div class="card-body">
+                    <div class="spinner-grow text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row py-1">
+            <div class="col-5">
+                <div class="form-group mb-0 position-relative">
+                    <div class="input-group input-group-alternative">
+                        <span class="input-group-text"><i class="ni ni-zoom-split-in"></i></span>
+                        <input class="form-control h-0" placeholder="Nhập Mã Sản Phẩm Hoặc Tên" type="text" @onkeydown='async e => { if(e.Code == "Enter"){ await ThemTuMaSanPham(ma); } }' @oninput='e =>{
+                    ma = e.Value.ToString(); TimKiemSanPham(e.Value?.ToString() ?? "");
+                }'>
+                    </div>
+                    @if (SanPhamsSearch != null && SanPhamsSearch.Any())
+                    {
+                        <div class="position-absolute list-group" style="z-index: 1; left: 0; right: 0" @onfocusout="() => SanPhamsSearch = new List<Data.Models.SanPhamModel>()">
+                            @foreach (var x in SanPhamsSearch.Where(c => c.TrangThai == 0).Select((v, i) => (i, v)))
+                            {
+                                if (x.i < 5)
+                                {
+                                    <button class="d-flex list-group-item list-group-item-action align-items-center">
+                                        <img src="@x.v.Anh" style="width: 20%" />
+                                        <span @onmousedown="() => { Id = x.v.Id; }" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample" class="ms-3 text-sm">@x.v.Ten<br /><i class="text-danger">@x.v.BienThes?.Count() biến thể</i></span>
+                                    </button>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="col-5 px-0 d-flex">
+                @if (HoaDons != null && HoaDons.Any())
+                {
+                    <span class="fa fa-barcode ms-2 me-2" style="color: white; font-size: 40px" @onclick="() => ShowScanBarcode = !ShowScanBarcode"></span>
+                    <button class="btn text-light text-bold shadow-none m-0 d-none" id="left-overflow" type="button" onclick='document.getElementById("myTab").scrollBy(-200, 0)'>&lt;</button>
+                    <div class="d-flex flex-nowrap overflow-hidden" style="direction: rtl" id="myTab">
+                        @foreach (var x in HoaDons.Select((v, i) => (i, v)).Reverse())
+                        {
+                            <button @onclick="() => index = x.i" class="btn @(x.i == index ? "btn-light" : "btn-outline-light") text-nowrap border mb-0 me-2"><span @onclick="() => XoaHoaDon(x.i)" class="fa fa-times text-danger ms-2"></span>Hóa Đơn @(x.i + 1)</button>
+                        }
+                    </div>
+                    <button class="btn btn-info mb-0" @onclick="() => ThemHoaDon()"><i class="fa fa-plus text-xs"></i></button>
+                    <button class="btn text-light text-bold shadow-none m-0 d-none" id="right-overflow" type="button" onclick='document.getElementById("myTab").scrollBy(200, 0)'>></button>
+                }
+            </div>
+            <div class="col-2 d-flex align-items-center justify-content-end">
+                @*<span class="me-1 text-light text-bolder text-sm">@HoaDons?[index]?.NhanVien?.Ten</span>*@
+                <div class="dropup-center">
+                    <button class="btn shadow-none mb-0 text-light" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="fa fa-bars"></span>
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <li><NavLink class="dropdown-item" href="/admin/invoice">Hóa Đơn</NavLink></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+@if (HoaDons != null && HoaDons.Any())
+{
+    <div class="container-fluid mt-1">
+        <div class="row">
+            <div class="col-8" style="overflow-y: auto; height: 90vh">
+                @foreach (var x in HoaDons[index].HoaDonChiTiets.Select((v, i) => (i, v)))
+                {
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-around align-items-center">
+                                <div class="d-flex flex-column">
+                                    <span class="text-sm text-bold" data-toggle="tooltip" data-placement="bottom" title="@x.v.BienThe?.SanPham?.Ten">@x.v.BienThe?.SanPham?.Ten?.BaCham(50)</span>
+                                    <span class="text-sm text-bold text-secondary">@String.Join(" + ", x.v.BienThe?.BienTheChiTiets.Select(c => c.GiaTri.Ten))</span>
+                                </div>
+                                <input type="number" value="@x.v.SoLuong" @oninput='async() => { if (x.v.SoLuongGoc < x.v.SoLuong){ await Swal.FireAsync("", "Không thể vượt quá số lượng sản phẩm", SweetAlertIcon.Error); x.v.SoLuong = x.v.SoLuongGoc - 1; }else if (x.v.SoLuong <= 1){ await Swal.FireAsync("", "Không thể là số âm", SweetAlertIcon.Error); x.v.SoLuong = 1; } }' @onchange='async e => { x.v.SoLuong = int.Parse(e.Value?.ToString() ?? ""); await TimKiemVoucher(); await CapNhatTongTien(); }' class="form-control w-10 text-center h-25" />
+                                <span class="text-sm">@Helper.FormatMoney(x.v.DonGia)</span>
+                                <span class="text-sm text-primary text-bold">@Helper.FormatMoney(x.v.DonGia * x.v.SoLuong)</span>
+                                <button class="btn text-danger btn-xs m-0" @onclick="() => XoaSanPham(x.i)"><span class="fa fa-trash"></span></button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="col-4">
+                <div class="card" style="height: 90vh; overflow-y: scroll;">
+                    <div class="card-body">
+                        <div class="row gy-2">
+                            <div class="col-12 position-relative">
+                                <input class="form-control" placeholder="Tìm kiếm khách hàng" value="@(HoaDons[index].KhachHang?.Sdt) @(!string.IsNullOrEmpty(HoaDons[index].KhachHang?.Ten) ? " - " + HoaDons[index].KhachHang?.Ten : "Nhập thông tin để tìm khách hàng")" @oninput='async e => { await TimKiemKhachHang(e.Value?.ToString() ?? ""); }' />
+                                @if (HoaDons[index].IdKhachHang == Guid.Empty || HoaDons[index].IdKhachHang == null)
+                                {
+                                    <button class="btn btn-xs shadow-none position-absolute top-50 end-4 translate-middle-y"><i class="fa fa-plus"></i></button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-xs shadow-none position-absolute top-50 end-4 translate-middle-y" @onclick='() => { HoaDons[index].IdKhachHang = null; HoaDons[index].KhachHang = null;
+                                    }'>
+                                        <i class="fa fa-times text-danger"></i>
+                                    </button>
+                                }
+                                <div class="position-relative">
+                                    @if (KhachHangsSeach != null)
+                                    {
+                                        <div class="position-absolute list-group w-100" style="z-index: 1; right: 0;" onfocus="" @onfocusout='() => { KhachHangsSeach = new List<Data.Models.KhachHangModel>(); }'>
+                                            @foreach (var x in KhachHangsSeach.Select((v, i) => (i, v)))
+                                            {
+                                                if (x.i < 5)
+                                                {
+                                                    <button @onmousedown="() => { HoaDons[index].IdKhachHang = x.v.Id; HoaDons[index].KhachHang = x.v; KhachHangsSeach = new List<Data.Models.KhachHangModel>(); HoaDons[index].TenNguoiNhan = x.v.Ten; HoaDons[index].Sdt = x.v.Sdt; HoaDons[index].DiaChi = x.v.DiaChi; }" class="d-flex list-group-item list-group-item-action align-items-center text-sm">@x.v.Ten - @x.v.Sdt</button>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="col-12 d-flex justify-content-between">
+                                <div></div>
+                                <div class="form-check">
+                                    <input @attributes='@(HoaDons[index].LoaiDonHang == (int)MinkyShopProject.Data.Enums.LoaiHoaDon.GiaoHang ?
+                                        new Dictionary<string, object>(){ { "checked", "" }} : null)'
+                                           class="form-check-input" type="checkbox" id="giaoHang" @onchange="() => {
+                                        if(HoaDons[index].LoaiDonHang == (int)MinkyShopProject.Data.Enums.LoaiHoaDon.GiaoHang){
+                                        HoaDons[index].LoaiDonHang = (int)MinkyShopProject.Data.Enums.LoaiHoaDon.BanTaiQuay;
+                                        }else{ HoaDons[index].LoaiDonHang = (int)MinkyShopProject.Data.Enums.LoaiHoaDon.GiaoHang; }
+                                        }" data-bs-toggle="tab" data-bs-target="#ship-tab-pane">
+                                    <label class="custom-control-label" for="giaoHang">Giao Hàng</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row gy-3">
+                            <div class="col-12">
+                                <ul class="nav nav-tabs text-sm">
+                                    <li class="nav-item">
+                                        <button class="nav-link @(HoaDons[index].LoaiDonHang == (int)MinkyShopProject.Data.Enums.LoaiHoaDon.BanTaiQuay ? "active": "")" id="hoa_don" data-bs-toggle="tab" data-bs-target="#hoa-don-tab-pane" @onclick="() => { HoaDons[index].LoaiDonHang = (int)MinkyShopProject.Data.Enums.LoaiHoaDon.BanTaiQuay;
+                                            HoaDons[index].TenNguoiNhan = null; HoaDons[index].Sdt = null; HoaDons[index].DiaChi = null; HoaDons[index].GhiChuGiaoHang = null; }">
+                                            Hóa Đơn
+                                        </button>
+                                    </li>
+                                    <li class="nav-item">
+                                        <button class="nav-link @(HoaDons[index].LoaiDonHang == (int)MinkyShopProject.Data.Enums.LoaiHoaDon.DatHang ? "active": "")" id="dat_hang" data-bs-toggle="tab" data-bs-target="#dat-hang-tab-pane" @onclick="() => { HoaDons[index].LoaiDonHang = (int)MinkyShopProject.Data.Enums.LoaiHoaDon.DatHang; HoaDons[index].TienShip = 0; }">Đặt Hàng</button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12">
+                                <div class="tab-content">
+                                    <div class="tab-pane fade @(HoaDons[index].LoaiDonHang == (int)MinkyShopProject.Data.Enums.LoaiHoaDon.BanTaiQuay ? "show active": "")" id="hoa-don-tab-pane">
+                                        <div class="row gy-3">
+                                            <div class="col-12 d-flex justify-content-between align-items-center">
+                                                <label class="text-xs">Tổng Tiền Hàng</label>
+                                                <span class="text-sm">@Helper.FormatMoney(HoaDons[index].TongTien)</span>
+                                            </div>
+                                            <div class="col-12 d-flex justify-content-between align-items-center position-relative">
+                                                <label class="text-xs">Giảm Giá</label>
+                                                <div class="d-flex position-relative">
+                                                    @if (HoaDons[index].VoucherLogs?[0].Voucher != null)
+                                                    {
+                                                        <button class="btn btn-xs shadow-none me-2 mb-0" @onclick="async() => { HoaDons[index].VoucherLogs = null; await CapNhatTongTien(); await TimKiemVoucher(); }"><i class="fa fa-times"></i></button>
+                                                    }
+                                                    <input type="text" class="w-100 border-top-0 border-end-0 border-start-0 text-sm text-end" style="outline: 0"
+                                                           value="@HoaDons[index].VoucherLogs?[0].Voucher?.Ten @(HoaDons[index].VoucherLogs != null && HoaDons[index].VoucherLogs.Any() ? " - " + Helper.FormatMoney(HoaDons[index].VoucherLogs[0].SoTienGiam) : "")"
+                                                           onfocus="document.getElementById('voucher-list').style.display='block'"
+                                                           onblur="setTimeout(() => { document.getElementById('voucher-list').style.display='none' }, 100)">
+                                                    <div class="position-absolute list-group w-100" id="voucher-list" style="z-index: 1; right: 0; display: none" @onfocusout="() => SanPhamsSearch = new List<Data.Models.SanPhamModel>()">
+                                                        @if (VouchersThoaMan != null && VouchersThoaMan.Any())
+                                                        {
+                                                            @foreach (var x in VouchersThoaMan.Where(c => c.TrangThai == 0 && c.SoLuong > 0 && c.NgayKetThuc > DateTime.Now).Select((v, i) => (i, v)))
+                                                            {
+                                                                if (x.i < 5)
+                                                                {
+                                                                    <button @onclick="() => ApDungVoucher(x.i)" class="d-flex list-group-item list-group-item-action align-items-center text-sm">@x.v.Ten</button>
+                                                                }
+                                                            }
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 d-flex justify-content-between align-items-center">
+                                                <label class="text-xs">Khách Cần Trả</label>
+                                                <span class="text-bolder text-sm">@(Helper.FormatMoney(HoaDons[index].TongTien + HoaDons[index]?.TienShip - (HoaDons[index]?.VoucherLogs != null && HoaDons[index].VoucherLogs.Any() ? HoaDons[index]?.VoucherLogs[0].SoTienGiam : 0)))</span>
+                                            </div>
+                                            <div class="col-12 d-flex justify-content-between align-items-center">
+                                                <div class="d-flex flex-column">
+                                                    <label class="text-xs">Khách Thanh Toán</label>
+                                                    <label class="text-xs text-secondary">@string.Join(", ", HoaDons[index].HinhThucThanhToans.Select(c => c.KieuThanhToan == 0 ? "Tiền Mặt" : "Chuyển Khoản"))</label>
+                                                </div>
+                                                <span class="fa fa-credit-card" data-bs-toggle="modal" data-bs-target="#exampleModal" @onclick="() =>{ HinhThucThanhToans = HoaDons[index].HinhThucThanhToans.ToList(); }"></span>
+                                                @if (HoaDons[index].HinhThucThanhToans.Count() > 1)
+                                                {
+                                                    <input type="text" class="border-top-0 border-end-0 border-start-0 text-sm text-end" disabled style="outline: 0; width: 40%; background: none" value="@Helper.FormatMoney(HoaDons[index].HinhThucThanhToans.Sum(c => c.TongTienThanhToan))">
+                                                }
+                                                else
+                                                {
+                                                    <input onchange="if(/^[0-9.]+$/.test(this.value) == false){ this.value = this.value.replace(/[^\d.]/g,'') }" type="text" class="border-top-0 border-end-0 border-start-0 text-sm text-end" style="outline: 0; width: 40%" value="@string.Format("{0:0,0}", HoaDons[index].HinhThucThanhToans[0].TongTienThanhToan)"
+                                                   @oninput='(e) => HoaDons[index].HinhThucThanhToans[0].TongTienThanhToan = float.Parse(e.Value?.ToString() ?? "")'>
+                                                }
+                                            </div>
+                                            <div class="col-12 d-flex justify-content-between align-items-center">
+                                                <label class="text-xs">Tiền Thừa Trả Khách</label>
+                                                <span class="text-sm">@(HoaDons[index].VoucherLogs != null && HoaDons[index].VoucherLogs.Any() ? Helper.FormatMoney(HoaDons[index].VoucherLogs[0].TienSauKhiGiam) : Helper.FormatMoney(HoaDons[index].HinhThucThanhToans.Sum(c => c.TongTienThanhToan) - HoaDons[index].TongTien))</span>
+                                            </div>
+                                            <div class="col-12 d-flex">
+                                                <span class="fa fa-edit"></span>
+                                                <input type="text" class="ms-3 w-100 border-top-0 border-end-0 border-start-0 text-sm text-secondary" style="outline: 0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade @(HoaDons[index].LoaiDonHang == (int)MinkyShopProject.Data.Enums.LoaiHoaDon.DatHang ? "show active": "")" id="dat-hang-tab-pane">
+                                        @if (HoaDons != null && HoaDons.Any())
+                                        {
+                                            <div class="row gy-3">
+                                                <div class="col-12 d-flex justify-content-between align-items-center position-relative">
+                                                    <label class="text-xs">Giảm Giá</label>
+                                                    <div class="d-flex position-relative">
+                                                        @if (HoaDons[index].VoucherLogs?[0].Voucher != null)
+                                                        {
+                                                            <button class="btn btn-xs shadow-none me-2 mb-0" @onclick="async() => { HoaDons[index].VoucherLogs = null; await CapNhatTongTien(); await TimKiemVoucher(); }"><i class="fa fa-times"></i></button>
+                                                        }
+                                                        <input type="text" class="w-100 border-top-0 border-end-0 border-start-0 text-sm text-end" style="outline: 0"
+                                                               value="@HoaDons[index].VoucherLogs?[0].Voucher?.Ten @(HoaDons[index].VoucherLogs != null && HoaDons[index].VoucherLogs.Any() ? " - " + Helper.FormatMoney(HoaDons[index].VoucherLogs[0].SoTienGiam) : "")"
+                                                               onfocus="document.getElementById('voucher-list-2').style.display='block'"
+                                                               onblur="setTimeout(() => { document.getElementById('voucher-list-2').style.display='none' }, 100)">
+                                                        <div class="position-absolute list-group w-100" id="voucher-list-2" style="z-index: 1; right: 0; display: none" @onfocusout="() => SanPhamsSearch = new List<Data.Models.SanPhamModel>()">
+                                                            @if (VouchersThoaMan != null && VouchersThoaMan.Any())
+                                                            {
+                                                                @foreach (var x in VouchersThoaMan.Where(c => c.TrangThai == 0).Select((v, i) => (i, v)))
+                                                                {
+                                                                    if (x.i < 5)
+                                                                    {
+                                                                        <button @onclick="() => ApDungVoucher(x.i)" class="d-flex list-group-item list-group-item-action align-items-center text-sm">@x.v.Ten</button>
+                                                                    }
+                                                                }
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12 d-flex justify-content-between align-items-center position-relative">
+                                                    <label class="text-xs">Tên Người Nhận <span class="text-danger">*</span></label>
+                                                    <input type="text" @bind="HoaDons[index].TenNguoiNhan" class="w-50 border-top-0 border-end-0 border-start-0 text-sm text-end" style="outline: 0">
+                                                </div>
+                                                <div class="col-12 d-flex justify-content-between align-items-center position-relative">
+                                                    <label class="text-xs">Số Điện Thoại <span class="text-danger">*</span></label>
+                                                    <input type="text" @bind="HoaDons[index].Sdt" class="w-50 border-top-0 border-end-0 border-start-0 text-sm text-end" style="outline: 0">
+                                                </div>
+                                                <div class="col-12 d-flex justify-content-between align-items-center position-relative">
+                                                    <label class="text-xs">Địa Chỉ <span class="text-danger">*</span></label>
+                                                    <input type="text" @bind="HoaDons[index].DiaChi" class="w-50 border-top-0 border-end-0 border-start-0 text-sm text-end" style="outline: 0">
+                                                </div>
+                                                <div class="col-12 d-flex justify-content-between align-items-center">
+                                                    <label class="text-xs">Khách Cần Trả</label>
+                                                    <span class="text-bolder text-sm">@(Helper.FormatMoney(HoaDons[index].TongTien + HoaDons[index]?.TienShip - (HoaDons[index]?.VoucherLogs != null && HoaDons[index].VoucherLogs.Any() ? HoaDons[index]?.VoucherLogs[0].SoTienGiam : 0)))</span>
+                                                </div>
+                                                <div class="col-12 d-flex">
+                                                    <span class="fa fa-edit"></span>
+                                                    <input type="text" @bind="HoaDons[index].GhiChu" class="ms-3 w-100 border-top-0 border-end-0 border-start-0 text-sm text-secondary" style="outline: 0">
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="tab-pane fade @(HoaDons[index].LoaiDonHang == (int)MinkyShopProject.Data.Enums.LoaiHoaDon.GiaoHang ? "show active": "")" id="ship-tab-pane">
+                                        @if (HoaDons != null && HoaDons.Any())
+                                        {
+                                            <div class="row gy-3">
+                                                <div class="col-12 d-flex justify-content-between align-items-center position-relative">
+                                                    <label class="text-xs">Giảm Giá</label>
+                                                    <div class="d-flex position-relative">
+                                                        @if (HoaDons[index].VoucherLogs?[0].Voucher != null)
+                                                        {
+                                                            <button class="btn btn-xs shadow-none me-2 mb-0" @onclick="async() => { HoaDons[index].VoucherLogs = null; await CapNhatTongTien(); await TimKiemVoucher(); }"><i class="fa fa-times"></i></button>
+                                                        }
+                                                        <input type="text" class="w-100 border-top-0 border-end-0 border-start-0 text-sm text-end" style="outline: 0"
+                                                               value="@HoaDons[index].VoucherLogs?[0].Voucher?.Ten @(HoaDons[index].VoucherLogs != null && HoaDons[index].VoucherLogs.Any() ? " - " + Helper.FormatMoney(HoaDons[index].VoucherLogs[0].SoTienGiam) : "")"
+                                                               onfocus="document.getElementById('voucher-list-3').style.display='block'"
+                                                               onblur="setTimeout(() => { document.getElementById('voucher-list-3').style.display='none' }, 100)">
+                                                        <div class="position-absolute list-group w-100" id="voucher-list-3" style="z-index: 1; right: 0; display: none" @onfocusout="() => SanPhamsSearch = new List<Data.Models.SanPhamModel>()">
+                                                            @if (VouchersThoaMan != null && VouchersThoaMan.Any())
+                                                            {
+                                                                @foreach (var x in VouchersThoaMan.Where(c => c.TrangThai == 0).Select((v, i) => (i, v)))
+                                                                {
+                                                                    if (x.i < 5)
+                                                                    {
+                                                                        <button @onclick="() => ApDungVoucher(x.i)" class="d-flex list-group-item list-group-item-action align-items-center text-sm">@x.v.Ten</button>
+                                                                    }
+                                                                }
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12 d-flex justify-content-between align-items-center position-relative">
+                                                    <label class="text-xs">Tên Người Nhận <span class="text-danger">*</span></label>
+                                                    <input type="text" @bind="HoaDons[index].TenNguoiNhan" class="w-50 border-top-0 border-end-0 border-start-0 text-sm text-end" style="outline: 0">
+                                                </div>
+                                                <div class="col-12 d-flex justify-content-between align-items-center position-relative">
+                                                    <label class="text-xs">Số Điện Thoại <span class="text-danger">*</span></label>
+                                                    <input type="text" @bind="HoaDons[index].Sdt" class="w-50 border-top-0 border-end-0 border-start-0 text-sm text-end" style="outline: 0">
+                                                </div>
+                                                <div class="col-12 d-flex justify-content-between align-items-center position-relative">
+                                                    <label class="text-xs">Địa Chỉ <span class="text-danger">*</span></label>
+                                                    <input type="text" @bind="HoaDons[index].DiaChi" class="w-50 border-top-0 border-end-0 border-start-0 text-sm text-end" style="outline: 0">
+                                                </div>
+                                                <div class="col-12 d-flex justify-content-between align-items-center position-relative">
+                                                    <label class="text-xs">Tiền Ship <span class="text-danger">*</span></label>
+                                                    <input onchange="if(/^[0-9.]+$/.test(this.value) == false){ this.value = this.value.replace(/[^\d.]/g,'') }" type="text" value="@string.Format("{0:0,0}", HoaDons[index].TienShip)" @oninput='async e =>{ HoaDons[index].TienShip = float.Parse(e.Value?.ToString() ?? ""); await CapNhatTongTien(); }' class="w-50 border-top-0 border-end-0 border-start-0 text-sm text-end" style="outline: 0">
+                                                </div>
+                                                <div class="col-12 d-flex justify-content-between align-items-center">
+                                                    <label class="text-xs">Khách Cần Trả</label>
+                                                    <span class="text-bolder text-sm">@(Helper.FormatMoney(HoaDons[index].TongTien + HoaDons[index]?.TienShip - (HoaDons[index]?.VoucherLogs != null && HoaDons[index].VoucherLogs.Any() ? HoaDons[index]?.VoucherLogs[0].SoTienGiam : 0)))</span>
+                                                </div>
+                                                <div class="col-12 d-flex">
+                                                    <span class="fa fa-edit"></span>
+                                                    <input type="text" @bind="HoaDons[index].GhiChuGiaoHang" class="ms-3 w-100 border-top-0 border-end-0 border-start-0 text-sm text-secondary" style="outline: 0">
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12" style="position: absolute; bottom: 0; left:0; right:0; overflow: hidden">
+                                <button class="btn btn-success" @onclick="ThemHoaDonVaoCsdl">Thanh Toán</button>
+                                <button class="btn btn-success" @onclick="LuuDuLieu">Lưu Dữ Liệu</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="offcanvas offcanvas-end w-50 rounded-start" tabindex="-1" id="offcanvasExample">
+        <div class="offcanvas-body overflow-hidden">
+            <MinkyShopProject.Admin.Pages.Client.ProductDetailComponent Id="Id" Sale="this"></MinkyShopProject.Admin.Pages.Client.ProductDetailComponent>
+        </div>
+    </div>
+    <div class="modal fade" id="exampleModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <label class="text-sm">Khách Thanh Toán</label>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @if (HoaDons != null && HoaDons.Any())
+                    {
+                        <div class="row gy-3">
+                            <div class="col-12 d-flex justify-content-between align-items-center">
+                                <label class="text-sm">Số Tiền</label>
+                                <input type="text" @oninput='e => soTienThanhToan = float.Parse(e.Value?.ToString() ?? "")' value="@string.Format("{0:0,0}", soTienThanhToan)"
+                                       class="w-50 border-top-0 border-end-0 border-start-0 text-sm text-end" style="outline: 0">
+                            </div>
+                            <div class="col-12 d-flex align-items-center">
+                                <button class="btn me-2" @onclick="async() => { await ThemHinhThucThanhToan(0); }">
+                                    Tiền Mặt
+                                </button>
+                                <button class="btn" @onclick="async() => { await ThemHinhThucThanhToan(1); }">
+                                    Chuyển Khoản
+                                </button>
+                            </div>
+                            <div class="col-12 d-flex justify-content-between align-items-center">
+                                <label class="text-sm">Khách Cần Trả</label>
+                                <span class="text-sm">@Helper.FormatMoney(HoaDons[index].TongTien)</span>
+                            </div>
+                            @if (HinhThucThanhToans != null)
+                            {
+                                @foreach (var x in HinhThucThanhToans)
+                                {
+                                    <div class="col-12 d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <button @onclick="() => { XoaHinhThucThanhToan(x.KieuThanhToan); }" class="btn text-danger btn-xs m-0 me-2"><span class="fa fa-trash"></span></button>
+                                            <span>@(x.KieuThanhToan == 1 ? "Chuyển Khoản" : "Tiền Mặt")</span>
+                                        </div>
+                                        <span class="text-sm">@Helper.FormatMoney(x.TongTienThanhToan)</span>
+                                    </div>
+                                }
+                            }
+                            <div class="col-12 d-flex justify-content-between align-items-center">
+                                <label class="text-sm">Khách Thanh Toán</label>
+                                <span class="text-sm text-secondary">@string.Join(", ", HinhThucThanhToans?.Sum(c => c.TongTienThanhToan))</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn bg-gradient-secondary" data-bs-dismiss="modal" @onclick="() => HinhThucThanhToans = null">Tắt</button>
+                    <button type="button" class="btn bg-gradient-primary" data-bs-dismiss="modal" @onclick="() => { if(HoaDons != null && HoaDons[index] != null && HinhThucThanhToans != null){ HoaDons[index].HinhThucThanhToans = HinhThucThanhToans.ToList(); HinhThucThanhToans = null; }; }">Xong</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (ShowScanBarcode)
+    {
+        <ZXingBlazor.Components.BarcodeReader ScanResult="ScanResult"
+                                      Close="(()=>ShowScanBarcode=!ShowScanBarcode)"
+                                      ScanBtnTitle="Scan"
+                                      ResetBtnTitle="Reset"
+                                      CloseBtnTitle="Close"
+                                      DecodeAllFormats="true"
+                                      SelectDeviceBtnTitle="Select Device">
+        </ZXingBlazor.Components.BarcodeReader>
+    }
+}

@@ -1,0 +1,391 @@
+﻿@page "/product/{id:guid}"
+@inject IJSRuntime JSRuntime
+@using MinkyShopProject.Data.Models
+@using Newtonsoft.Json
+@inject HttpClient HttpClient
+@inject SweetAlertService Swal
+@inject Blazored.SessionStorage.ISessionStorageService Session
+
+@if (BienTheChiTiet != null)
+{
+    <main>
+        <div class="container margin_30">
+            <div class="row">
+                @if(BienTheChiTiet.Data.SanPham?.BienThes != null)
+                {
+                    <div class="col-md-6">
+                        <div class="all">
+                            <div class="slider">
+                                <div class="owl-carousel owl-theme main">
+                                    @foreach (var x in BienTheChiTiet.Data.SanPham.BienThes.Select(c => c.Anh).Distinct())
+                                    {
+                                        <div style="background-image: url(@x);" class="item-box"></div>
+                                    }
+                                </div>
+                                <div class="left nonl"><i class="ti-angle-left"></i></div>
+                                <div class="right"><i class="ti-angle-right"></i></div>
+                            </div>
+                            <div class="slider-two">
+                                <div class="owl-carousel owl-theme thumbs">
+                                    @foreach (var x in BienTheChiTiet.Data.SanPham.BienThes.Select(c => c.Anh).Distinct())
+                                    {
+                                        <div style="background-image: url(@x);" class="item"></div>
+                                    }
+                                </div>
+                                <div class="left-t nonl-t"></div>
+                                <div class="right-t"></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                <div class="col-md-6">
+                    <!-- /page_header -->
+                    <div class="prod_info">
+                        <h1>@BienTheChiTiet.Data.SanPham?.Ten</h1>
+                        <span class="rating">
+                            @for (int i = 0; i < soDanhGia; i++)
+                            {
+                                <i class="icon-star voted"></i>
+                            }
+                            @for (int i = 0; i < 5 - soDanhGia; i++)
+                            {
+                                <i class="icon-star"></i>
+                            }
+                            <em>@(DanhGia?.Count <= 0 ? "0" : DanhGia?.Count) reviews</em>
+                        </span>
+                        <p><small>@( BienThe.Id != Guid.Empty ? "SKU: " + BienThe.Sku : "SKU: #" )</small><br></p>
+                        <div class="prod_options">
+                            @if(BienTheChiTiet.Data.ThuocTinhs != null)
+                            {
+                                @foreach (var x in BienTheChiTiet.Data.ThuocTinhs.Select((v, i) => (i, v)))
+                                {
+                                    <div class="row">
+                                        <label class="col-xl-3 col-lg-5  col-md-6 col-6 pt-0"><strong>@x.v.Ten</strong></label>
+                                        <div class="col-xl-6 col-lg-5 col-md-6 col-6" style="display: flex">
+                                            @foreach (var y in x.v.GiaTris)
+                                            {
+                                                <ul style="list-style: none; padding-left: 0; padding-right: 3px">
+                                                    <li><button class="btn_1 @(GiaTris[x.i] == y.Ten ? "active" : "")" @onclick='async() => { if(GiaTris[x.i] != y.Ten) { GiaTris[x.i] = y.Ten; }else{ GiaTris[x.i] = ""; BienThe = new BienTheModel(); }; await TimKiemBienThe(); }'>@y.Ten</button></li>
+                                                </ul>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-3 col-md-6">
+                                <div class="price_main"><span class="new_price">@(BienThe.Id != Guid.Empty ? Helper.FormatMoney(BienThe.GiaBan) : Helper.FormatMoney(BienTheChiTiet.Data.SanPham?.BienThes?.Min(c => c.GiaBan)))</span></div>
+                            </div>
+                            <div class="col-lg-4 col-md-6">
+                                <div class="d-flex">
+                                    <button class="btn_1" @onclick="() =>{ if(BienThe.SoLuongTam > 1) BienThe.SoLuongTam -= 1; }">-</button>
+                                    <input type="number" @bind="BienThe.SoLuongTam" min="1" style="width: 50%; text-align: center" />
+                                    <button class="btn_1" @onclick="() => BienThe.SoLuongTam += 1">+</button>
+                                </div>
+                                <p class="mt-2">Kho : @(BienThe.Id != Guid.Empty ? BienThe.SoLuong : BienTheChiTiet.Data.SanPham?.BienThes?.Sum(c => c.SoLuong))</p>
+                            </div>
+                            <div class="col-lg-5 col-md-6">
+                                <div class="btn_add_to_cart" @onclick="ThemVaoGioHang"><a class="btn_1">Add to Cart</a></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /product_actions -->
+                </div>
+            </div>
+            <!-- /row -->
+        </div>
+        <!-- /container -->
+
+        <div class="tabs_product">
+            <div class="container">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a id="tab-A" href="#pane-A" class="nav-link active" data-toggle="tab" role="tab">Description</a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="tab-B" href="#pane-B" class="nav-link" data-toggle="tab" role="tab">Reviews</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <!-- /tabs_product -->
+        <div class="tab_content_wrapper">
+            <div class="container">
+                <div class="tab-content" role="tablist">
+                    <div id="pane-A" class="card tab-pane fade active show" role="tabpanel" aria-labelledby="tab-A">
+                        <div class="card-header" role="tab" id="heading-A">
+                            <h5 class="mb-0">
+                                <a class="collapsed" data-toggle="collapse" href="#collapse-A" aria-expanded="false" aria-controls="collapse-A">
+                                    Description
+                                </a>
+                            </h5>
+                        </div>
+                        <div id="collapse-A" class="collapse" role="tabpanel" aria-labelledby="heading-A">
+                            <div class="card-body">
+                                <p>
+                                    @(BienTheChiTiet.Data.SanPham != null && BienTheChiTiet.Data.SanPham.MoTa != null && !string.IsNullOrWhiteSpace(BienTheChiTiet.Data.SanPham.MoTa) ? BienTheChiTiet.Data.SanPham.MoTa : "Chưa có mô tả")
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /TAB A -->
+                    <div id="pane-B" class="card tab-pane fade" role="tabpanel" aria-labelledby="tab-B">
+                        <div class="card-header" role="tab" id="heading-B">
+                            <h5 class="mb-0">
+                                <a class="collapsed" data-toggle="collapse" href="#collapse-B" aria-expanded="false" aria-controls="collapse-B">
+                                    Reviews
+                                </a>
+                            </h5>
+                        </div>
+                        <div id="collapse-B" class="collapse" role="tabpanel" aria-labelledby="heading-B">
+                            <div class="card-body">
+                                <div class="row justify-content-between">
+                                    @if(DanhGia != null)
+                                    {
+                                        @foreach (var x in DanhGia)
+                                        {
+                                            <div class="col-lg-6">
+                                                <div class="review_content">
+                                                    <div class="clearfix add_bottom_10">
+                                                        <span class="rating">
+                                                            @foreach (var y in Enumerable.Range(0, x.SoDanhGia))
+                                                            {
+                                                                <i class="icon-star"></i>
+                                                            }
+                                                            @foreach (var y in Enumerable.Range(0, 5 - x.SoDanhGia))
+                                                            {
+                                                                <i class="icon-star empty"></i>
+                                                            }
+                                                            <em>@(x.SoDanhGia).0/5.0</em>
+                                                        </span>
+                                                        @if (DateTime.Now.Millisecond - x.NgayDanhGia.Millisecond < 60 && DateTime.Now.Minute - x.NgayDanhGia.Minute < 1)
+                                                        {
+                                                            <em>@(DateTime.Now.Millisecond - x.NgayDanhGia.Millisecond) giây trước</em>
+                                                        }
+                                                        else if (DateTime.Now.Minute - x.NgayDanhGia.Minute < 60 && DateTime.Now.Hour - x.NgayDanhGia.Hour < 1 && DateTime.Now.Day - x.NgayDanhGia.Day < 1)
+                                                        {
+                                                            <em>@(DateTime.Now.Minute - x.NgayDanhGia.Minute) phút trước</em>
+                                                        }
+                                                        else if (DateTime.Now.Hour - x.NgayDanhGia.Hour < 24 && DateTime.Now.Day - x.NgayDanhGia.Day < 1)
+                                                        {
+                                                            <em>@(DateTime.Now.Hour - x.NgayDanhGia.Hour) giờ trước</em>
+                                                        }
+                                                        else{
+                                                            <em>@(x.NgayDanhGia)</em>
+                                                        }
+                                                    </div>
+                                                    <p>@x.NoiDung</p>
+                                                </div>
+                                            </div>
+                                        }
+                                    }else{
+                                        @if(DanhGia?.Count <= 0)
+                                        {
+                                            <p>Không có đánh giá</p>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                            <!-- /card-body -->
+                        </div>
+                    </div>
+                    <!-- /tab B -->
+                </div>
+                <!-- /tab-content -->
+            </div>
+            <!-- /container -->
+        </div>
+        <!-- /tab_content_wrapper -->
+    </main>
+}
+<!-- /main -->
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    ResponseObject<BienTheChiTietModel>? BienTheChiTiet;
+
+    private ResponseObject<GioHangModel>? GioHangs;
+
+    BienTheModel BienThe = new BienTheModel();
+
+    List<DanhGiaModel>? DanhGia;
+
+    double soDanhGia = 0;
+
+    string[] GiaTris = new string[0];
+
+    protected async override void OnAfterRender(bool firstRender)
+    {
+        await JSRuntime.InvokeVoidAsync("carousel_with_thumb");
+    }
+
+    protected async override Task OnInitializedAsync()
+    {
+        var danhGia = await HttpClient.GetFromJsonAsync<ResponseList<DanhGiaModel>>("https://localhost:7053/api/danhgia/" + Id);
+        if(danhGia != null)
+        {
+            if(danhGia.Data.Count > 0)
+            {
+                soDanhGia = Queryable.Average(danhGia.Data.Select(c => c.SoDanhGia).AsQueryable());
+            }
+            else
+            {
+                soDanhGia = 0;
+            }
+            DanhGia = danhGia.Data;
+        }
+        var khachHang = await Session.GetItemAsync<KhachHangModel>("khachHang");
+        if(khachHang != null)
+        {
+            GioHangs = await HttpClient.GetFromJsonAsync<ResponseObject<GioHangModel>>("https://localhost:7053/api/GioHang?id=" + khachHang.Id);
+            if(GioHangs?.Data.IdKhachHang == Guid.Empty)
+            {
+                GioHangs.Data.IdKhachHang = khachHang.Id;
+            }
+        }
+        BienTheChiTiet = await HttpClient.GetFromJsonAsync<ResponseObject<BienTheChiTietModel>>($"https://localhost:7053/api/BienThe/{Id}");
+        if (BienTheChiTiet?.Data.ThuocTinhs != null)
+        {
+            GiaTris = new string[BienTheChiTiet.Data.ThuocTinhs.Count()];
+        }
+    }
+
+    protected async override Task OnParametersSetAsync()
+    {
+        await JSRuntime.InvokeVoidAsync("carousel_with_thumb");
+    }
+
+    async Task TimKiemBienThe()
+    {
+        var result = BienTheChiTiet.Data.SanPham.BienThes.FirstOrDefault(c => string.Join(" + ", c.BienTheChiTiets.OrderBy(c => c.GiaTri?.Ten).Select(c => c.GiaTri?.Ten)) == string.Join(" + ", GiaTris.OrderBy(c => c)));
+        if(result != null)
+        {
+            BienThe = result;
+            BienThe.SanPham = BienTheChiTiet.Data.SanPham;
+        }
+    }
+
+    #region GioHang
+
+    private async Task AddCart()
+    {
+        if(BienThe != null)
+        {
+            if (BienThe.SoLuongTam <= 0)
+            {
+                await Swal.FireAsync("", "Vui lòng nhập số lượng", SweetAlertIcon.Error);
+                return;
+            }
+
+            if (BienThe.SoLuongTam > BienThe.SoLuong)
+            {
+                await Swal.FireAsync("", "Không đủ tồn kho", SweetAlertIcon.Error);
+                return;
+            }
+
+            if (await Session.GetItemAsStringAsync("cart") == null)
+            {
+                HoaDonCreateModel cart = new HoaDonCreateModel();
+                cart.HoaDonChiTiets.Add(new HoaDonChiTietModel() { IdBienThe = BienThe.Id, SoLuong = BienThe.SoLuongTam, DonGia = BienThe.GiaBan, SoLuongGoc = BienThe.SoLuong, BienThe = BienThe });
+                await Session.SetItemAsStringAsync("cart", JsonConvert.SerializeObject(cart, Formatting.None, new JsonSerializerSettings(){ ReferenceLoopHandling = ReferenceLoopHandling.Ignore }));
+                await Swal.FireAsync("", "Thêm thành công", SweetAlertIcon.Success);
+            }
+            else
+            {
+                HoaDonCreateModel cart = await Session.GetItemAsync<HoaDonCreateModel>("cart");
+                var sp = cart.HoaDonChiTiets.FirstOrDefault(c => c.IdBienThe == BienThe.Id);
+                if (sp != null && sp.SoLuong >= BienThe.SoLuong)
+                {
+                    await Swal.FireAsync("", "Không đủ tồn kho", SweetAlertIcon.Error);
+                    return;
+                }
+
+                if (sp != null)
+                {
+                    sp.SoLuong += BienThe.SoLuongTam;
+                    sp.SoLuongGoc = BienThe.SoLuong;
+                }
+                else
+                {
+                    cart.HoaDonChiTiets.Add(new HoaDonChiTietModel { IdBienThe = BienThe.Id, SoLuong = BienThe.SoLuongTam, DonGia = BienThe.GiaBan, SoLuongGoc = BienThe.SoLuong, BienThe = BienThe });
+                }
+                //await Session.SetItemAsync<HoaDonCreateModel>("cart", Newtonsoft.Json.JsonConvert.DeserializeObject<HoaDonCreateModel>(Newtonsoft.Json.JsonConvert.SerializeObject(cart), new Newtonsoft.Json.JsonSerializerSettings()
+                //    {
+                //        Formatting = Newtonsoft.Json.Formatting.Indented,
+                //        ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+                //    }));
+                await Session.SetItemAsStringAsync("cart", JsonConvert.SerializeObject(cart, Formatting.None, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore }));
+                await Swal.FireAsync("", "Thêm thành công", SweetAlertIcon.Success);
+            }
+        }
+        else
+        {
+            await Swal.FireAsync("", "Chưa Chọn Sản Phẩm", SweetAlertIcon.Error);
+        }
+    }
+    #endregion
+
+    async Task ThemVaoGioHang()
+    {
+        if(await Session.GetItemAsStringAsync("khachHang") == null)
+        {
+            if (BienThe.SoLuongTam <= 0)
+            {
+                await Swal.FireAsync("", "Vui lòng nhập số lượng", SweetAlertIcon.Error);
+                return;
+            }
+
+            await AddCart();
+            return;
+        }
+
+        if(BienThe != null && GioHangs != null)
+        {
+            if(BienThe.SoLuongTam <= 0)
+            {
+                await Swal.FireAsync("", "Vui lòng nhập số lượng", SweetAlertIcon.Error);
+                return;
+            }
+
+            if (BienThe.SoLuongTam > BienThe.SoLuong)
+            {
+                await Swal.FireAsync("", "Không đủ tồn kho", SweetAlertIcon.Error);
+                return;
+            }
+
+            if (GioHangs.Data.GioHangChiTiets != null && GioHangs.Data.GioHangChiTiets.Any())
+            {
+                var gioHangChiTiet = GioHangs.Data.GioHangChiTiets.FirstOrDefault(c => c.IdBienThe == BienThe.Id);
+                if (gioHangChiTiet != null)
+                {
+                    gioHangChiTiet.SoLuong += BienThe.SoLuongTam;
+                }
+                else
+                {
+                    GioHangs.Data.GioHangChiTiets?.Add(new GioHangChiTietModel() { IdBienThe = BienThe.Id, SoLuong = BienThe.SoLuongTam, DonGia = BienThe.GiaBan });
+                }
+            }
+            else
+            {
+                GioHangs.Data.GioHangChiTiets = new List<GioHangChiTietModel>();
+                GioHangs.Data.GioHangChiTiets?.Add(new GioHangChiTietModel() { IdBienThe = BienThe.Id, SoLuong = BienThe.SoLuongTam, DonGia = BienThe.GiaBan });
+            }
+
+            var status = await HttpClient.PutAsJsonAsync<GioHangModel>("https://localhost:7053/api/GioHang", GioHangs.Data);
+            if (status.IsSuccessStatusCode)
+            {
+                await Swal.FireAsync("Thông Báo", "Thêm Thành Công", SweetAlertIcon.Success);
+            }
+            else
+            {
+                await Swal.FireAsync("Thông Báo", "Thêm Thất Bại", SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            await Swal.FireAsync("Thông Báo", "Chưa Chọn Sản Phẩm", SweetAlertIcon.Error);
+        }
+    }
+}

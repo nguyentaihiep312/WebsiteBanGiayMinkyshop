@@ -1,0 +1,244 @@
+﻿@using Data.Models;
+@inject HttpClient HttpClient;
+@inject SweetAlertService Swal;
+@using Net.ConnectCode.BarcodeFontsStandard2D
+@page "/printma/{mah}"
+@inject NavigationManager NavigationManager
+@layout EmptyMainLayout
+
+<div class="container-fluid mt--7" style="overflow-y: auto">
+	@if (HoaDon != null)
+	{
+		<div class="row">
+			<div class="col-xl-12 order-xl-1" style="padding: 0">
+				<div class="card shadow-none" style="height: 100vh">
+					<div class="card-header text-center text-bolder" style="font-weight: bolder;font-size: 24px;margin: 20px auto;">
+						Minky Shop
+					</div>
+					<div class="card-body py-0">
+						<div class="tab-content" id="myTabContent">
+							<div class="tab-pane fade show active" id="tab-detail">
+								<div class="row align-items-center">
+									<div class="col-4">
+										<label class="col-form-label text-sm p-0 mb-2" style="margin-right: 10px">Mã hóa đơn</label>
+										<span class="text-bolder text-sm">@HoaDon?.Ma</span>
+									</div>
+									<div class="col-4">
+										<label class="col-form-label text-sm p-0 mb-2 me-3" style="margin-right: 10px">Trạng thái</label>
+										@if (HoaDon?.LoaiDonHang == (int)MinkyShopProject.Data.Enums.LoaiHoaDon.GiaoHang)
+										{
+											var trangThaiGiaoHang = "";
+											<span class="text-bolder text-sm text-danger">
+												@switch (HoaDon.TrangThaiGiaoHang)
+												{
+													case 0:
+														trangThaiGiaoHang = "Chờ Xác Nhận";
+														break;
+													case 1:
+														trangThaiGiaoHang = "Chờ Lấy Hàng";
+														break;
+													case 2:
+														trangThaiGiaoHang = "Đang Giao";
+														break;
+													case 3:
+														trangThaiGiaoHang = "Đã Giao";
+														break;
+													case 4:
+														trangThaiGiaoHang = "Đã Hủy";
+														break;
+													case 5:
+														trangThaiGiaoHang = "Chỉ Nhận Một Phần";
+														break;
+													case 6:
+														trangThaiGiaoHang = "Giao Thất Bại";
+														break;
+													case 7:
+														trangThaiGiaoHang = "Không Nghe Máy";
+														break;
+													default:
+														break;
+												}
+												@trangThaiGiaoHang
+											</span>
+										}
+										else
+										{
+											<span class="text-bolder text-sm">@HoaDon?.TrangThai</span>
+										}
+									</div>
+									<div class="col-4">
+										<label class="col-form-label text-sm p-0 mb-2 me-3" style="margin-right: 10px">Kênh bán</label>
+										<span class="text-bolder text-sm text-danger">
+											@{
+												var loaiDonHang = "";
+											}
+											@switch (HoaDon?.LoaiDonHang)
+											{
+												case 0:
+													loaiDonHang = "Bán Tại Quầy";
+													break;
+												case 1:
+													loaiDonHang = "Đặt Hàng";
+													break;
+												case 2:
+													loaiDonHang = "Giao Hàng";
+													break;
+												case 3:
+													loaiDonHang = "Đơn Online";
+													break;
+												default:
+													break;
+											}
+											@loaiDonHang
+										</span>
+									</div>
+									<div class="col-4">
+										<label class="col-form-label text-sm p-0 mb-2 me-3" style="margin-right: 10px">Thời gian</label>
+										<span class="text-bolder text-sm">@HoaDon?.NgayTao</span>
+									</div>
+									<div class="col-4">
+										<label class="col-form-label text-sm p-0 mb-2 me-3" style="margin-right: 10px">Khách hàng</label>
+										<span class="text-bolder text-sm">
+											@(
+												HoaDon?.KhachHang?.Ten ?? "Khách Lẻ"
+												)
+										</span>
+									</div>
+									<div class="col-4">
+										<label class="col-form-label p-0 text-sm mb-2 me-3" style="margin-right: 10px">Nhân viên</label>
+										<span class="text-bolder text-sm">@HoaDon?.NhanVien?.Ten</span>
+									</div>
+								</div>
+								<div class="table-responsive mt-2">
+									<table class="table table-bordered align-middle text-center">
+										<thead>
+											<tr>
+												<th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Mã hàng</th>
+												<th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tên hàng</th>
+												<th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Số lượng</th>
+												<th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Đơn giá</th>
+												<th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Thành tiền</th>
+											</tr>
+										</thead>
+										<tbody>
+											@if (HoaDon?.HoaDonChiTiets.Count() > 0)
+											{
+												foreach (var x in HoaDon.HoaDonChiTiets.Where(c => c.SoLuong > 0).Select((Value, Index) => (Index, Value)))
+												{
+													<tr>
+														<td>
+															<span class="text-secondary text-xs font-weight-bold">@x.Value.BienThe?.Sku</span>
+														</td>
+														<td>
+															<span class="text-secondary text-xs font-weight-bold">@x.Value.BienThe?.SanPham?.Ten (@string.Join(" ", x.Value.BienThe?.BienTheChiTiets?.Select(c => c.GiaTri?.Ten)))</span>
+														</td>
+														<td>
+															<span class="text-secondary text-xs font-weight-bold">@x.Value.SoLuong</span>
+														</td>
+														<td class="align-middle text-center text-sm">
+															<span class="text-secondary text-xs font-weight-bold">@Helper.FormatMoney(x.Value.DonGia)</span>
+														</td>
+														<td class="align-middle text-center text-sm">
+															<span class="text-secondary text-xs font-weight-bold">@Helper.FormatMoney(x.Value.DonGia * x.Value.SoLuong)</span>
+														</td>
+													</tr>
+												}
+											}
+											else
+											{
+												<tr>
+													<td colspan="6" class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Không Có Dữ Liệu</td>
+												</tr>
+											}
+										</tbody>
+									</table>
+								</div>
+								<div class="row align-items-center text-end mt-2">
+									<div class="col-6">
+										<div id="barcodeFonts" style="white-space: pre-line; text-align: center">@Message</div>
+									</div>
+									<div class="col-6" style="text-align: end">
+										<div class="row">
+											<div class="col-12">
+												<label class="col-form-label text-sm me-3 p-0 mb-2">Số lượng hàng hóa</label>
+												<span class="text-bolder text-sm">@HoaDon?.HoaDonChiTiets.Count()</span>
+											</div>
+											<div class="col-12">
+												<label class="col-form-label text-sm me-3 p-0 mb-2">Tổng tiền hàng</label>
+												<span class="text-bolder text-sm">@(Helper.FormatMoney(HoaDon?.TongTien))</span>
+												@if (HoaDon?.LoaiDonHang == 2)
+												{
+													<span class="text-bolder text-sm">( @Helper.FormatMoney(HoaDon?.TienShip) tiền ship)</span>
+												}
+											</div>
+											<div class="col-12">
+												<label class="col-form-label text-sm me-3 p-0 mb-2">Giảm giá hóa đơn</label>
+												<span class="text-bolder text-sm">
+													@(
+														HoaDon?.VoucherLogs != null && HoaDon.VoucherLogs.Any() ? Helper.FormatMoney(HoaDon?.VoucherLogs?[0].SoTienGiam) : 0
+														)
+												</span>
+											</div>
+											<div class="col-12">
+												<label class="col-form-label text-sm me-3 p-0 mb-2">Khách cần trả</label>
+												<span class="text-bolder text-sm">@(Helper.FormatMoney(HoaDon?.TongTien + HoaDon?.TienShip - (HoaDon?.VoucherLogs != null && HoaDon.VoucherLogs.Any() ? HoaDon?.VoucherLogs[0].SoTienGiam : 0)))</span>
+											</div>
+											<div class="col-12">
+												<label class="col-form-label text-sm me-3 p-0 mb-2">Khách đã trả</label>
+												<span class="text-bolder text-sm">@Helper.FormatMoney(HoaDon?.HinhThucThanhToans.Sum(c => c.TongTienThanhToan))</span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+</div>
+
+@code {
+
+	Uri Url = new Uri("https://localhost:7053/api/hoadon");
+
+	[Parameter]
+	public string mah { get; set; }
+
+	public HoaDonModel? HoaDon { get; set; }
+
+	string Ma = "";
+
+	string GhiChuCapNhat = "";
+
+	public string Message { get; set; }
+
+	List<HinhThucThanhToanModel> HinhThucThanhToans = new List<HinhThucThanhToanModel>();
+
+	protected async override Task OnParametersSetAsync()
+	{
+		try
+		{
+			var result = await HttpClient.GetFromJsonAsync<ResponseObject<HoaDonModel>>("https://localhost:7053/api/HoaDon/ma" + "/" + mah);
+			if (result != null)
+			{
+				HoaDon = result.Data;
+			}
+			else
+			{
+				NavigationManager.NavigateTo("/notfound");
+			}
+			if (HoaDon != null)
+			{
+				QR qrCode = new QR(HoaDon.Ma, "Q", 8);
+				string output = qrCode.Encode();
+				Message = output;
+			}
+		}
+		catch (Exception)
+		{
+			NavigationManager.NavigateTo("/notfound");
+		}
+	}
+}

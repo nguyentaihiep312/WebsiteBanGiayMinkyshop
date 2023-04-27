@@ -1,0 +1,268 @@
+﻿@using Blazored.LocalStorage;
+@using MinkyShopProject.Business.Entities;
+@using System.IdentityModel.Tokens.Jwt;
+@using MinkyShopProject.Data.Models;
+@using System.Text.RegularExpressions;
+@inject ILocalStorageService local;
+@inject HttpClient HttpClient;
+@inject NavigationManager NavigationManager;
+
+    <!-- Navbar -->
+<!-- Navbar -->
+<nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl " id="navbarBlur" data-scroll="false">
+    <div class="container-fluid py-1 px-3">
+        <nav aria-label="breadcrumb">
+            <div class="form-check form-switch">
+                <input class="form-check-input bg-danger" type="checkbox" id="flexSwitchCheckDefault"
+                       onchange="
+                        document.querySelector('.main-content').style.marginLeft =
+                        document.querySelector('.main-content').style.marginLeft == '17.125rem' ? '0' : '17.125rem'
+                        document.getElementById('sidenav-main').style.transform =
+                        document.querySelector('.main-content').style.marginLeft != '17.125rem' ? 'translateX(-17.125rem)' : 'translateX(0)'
+                        ">
+            </div>
+        </nav>
+        <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+            <div class="ms-md-auto pe-md-3 d-flex align-items-center">
+            </div>
+            <ul class="navbar-nav  justify-content-end">
+                <li class="nav-item px-3 d-flex align-items-center">
+                    <a class="nav-link text-white font-weight-bold px-0" data-bs-toggle="@(Ca == null ? "modal" : "")" data-bs-target="@(Ca == null ? "#exampleModal" : "")" style="cursor:pointer">
+                        <i class="fa fa-@(Ca == null ? "play" : "pause")"></i>
+                        <span class="d-sm-inline d-none">@title @(title == "Bắt đầu" ? "" : $": {Helper.FormatMoney(Ca?.TienBanDau + DoanhThuTienMat - (tongtienmatrut = Ca.TongTienMatRut == null ? 0 : Ca.TongTienMatRut))}")</span>
+                    </a>
+                </li>
+                <li class="nav-item d-flex align-items-center">
+                    @if (IsAuth)
+                    {
+                        <a href="javascript:;" class="nav-link text-white font-weight-bold px-0">
+                            <i class="fa fa-user me-sm-1"></i>
+                            <span class="d-sm-inline d-none">@Ten</span>
+                        </a>
+
+                    }
+                    else
+                    {
+                        <NavLink href="/login" class="nav-link text-white font-weight-bold px-0">
+                            <i class="fa fa-user me-sm-1"></i>
+                            <span class="d-sm-inline d-none">Sign In</span>
+                        </NavLink>
+                    }
+                    
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Khai báo tiền đầu ca</h5>
+                <button type="button" class="btn-close text-dark" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (CaTruoc == null && Cas.Count() != 0)
+            {
+                <div class="modal-body">
+                    <p>Bạn không phải nhân viên nhận bàn giao</p>
+                </div>
+            }
+            else
+            {
+                <div class="modal-body">
+                    <div class="mb-3 d-flex justify-content-between">
+                        <div>
+                            <label class="form-control-label">Ngày nhận ca: Ngày @ThoiGianNhanCa.Day Tháng @ThoiGianNhanCa.Month Năm @ThoiGianNhanCa.Year</label>
+                        </div>
+                        <div>
+                            <label class="form-control-label">Thời gian nhận ca: @ThoiGianNhanCa.ToShortTimeString()</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        @if (CaTruoc != null)
+                        {
+                            <label class="form-control-label">Tổng Tiền Mặt Ca Trước</label>
+                            <input value="@(Helper.FormatMoney(CaTruoc.TongTienMatCuoiCa))" class="form-control form-control-sm" disabled />
+                        }
+                        <div>
+                            <div class="d-flex justify-content-between">
+                                <label class="form-control-label">Tổng Tiền Mặt</label>
+                                <label class="form-control-label text-danger">@(ErrorMoney)</label>
+                            </div>
+                            <input value="@string.Format("{0:0,0}",TongThanhTien)" class="form-control form-control-sm" @oninput="ChangeThanhTien" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer d-flex justify-content-center">
+                    <button type="button" class="btn btn-outline-success text-success" data-bs-dismiss="modal" @onclick="BatDau">
+                        <i class="fa fa-check"></i> @(CaTruoc == null ? "Bắt Đầu Ngày Làm Việc" : "Nhận Ca")
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code{
+    [Inject]
+    public SweetAlertService Swal { get; set; } = null!;
+
+    bool IsAuth = true;
+
+    string Ten = "";
+
+    private GiaoCa Ca = new();
+
+    private GiaoCa CaTruoc = new();
+
+    private List<GiaoCa> Cas = new();
+
+    private float TongTienHoaDonTienMat = 0;
+
+    private string title = "Bắt đầu";
+
+    private string thoigian = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+
+    private float TongThanhTien = 0;
+
+    private DateTime ThoiGianNhanCa = DateTime.Now;
+
+    private string TongTienCaTruoc = string.Empty;
+
+    private List<HoaDon> hoadons = new();
+
+    private float DoanhThuTienMat = 0;
+
+    private string Time = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+
+    private float? tongtienmatrut = 0;
+
+    protected async override Task OnInitializedAsync()
+    {
+        if (await local.GetItemAsStringAsync("Token") == null)
+        {
+            IsAuth = false;
+        }
+        else
+        {
+            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(await local.GetItemAsStringAsync("Token"));
+            Ten = jwt.Claims.FirstOrDefault(c => c.Type.Equals("Ten"))?.Value ?? "";
+            var IdNhanVien = jwt.Claims.FirstOrDefault(c => c.Type.Equals("Id"))?.Value;  
+            IsAuth = true;
+            var datetime = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+            var result = await HttpClient.GetFromJsonAsync<Response<GiaoCa>>($"https://localhost:7053/api/GiaoCas?Id={Guid.Parse(IdNhanVien)}&ThoiGian={datetime}");
+            var result2 = await HttpClient.GetFromJsonAsync<Response<GiaoCa>>($"https://localhost:7053/api/GiaoCas/GetCaTruoc?Id={Guid.Parse(IdNhanVien)}");
+            var result3 = await HttpClient.GetFromJsonAsync<Response<List<GiaoCa>>>("https://localhost:7053/api/GiaoCas/CaDangCho");
+            Ca = result.Data;
+            if (Ca != null)
+            {
+                await GetHoaDonTrongCa();
+            }
+            CaTruoc = result2.Data;
+            Cas = result3.Data;
+            title = Ca == null ? "Bắt đầu" : "Đang làm việc";
+        }
+    }
+
+    private async Task GetHoaDonTrongCa()
+    {
+        float TienMatHoaDon = 0;
+        var result = await HttpClient.GetFromJsonAsync<Response<List<HoaDon>>>($"https://localhost:7053/api/GiaoCas/HoaDonTrongCa?Id={Ca.IdNhanVienTrongCa}&ThoiGian={Time}");
+        hoadons = result.Data;
+        foreach (var HoaDon in result.Data)
+        {
+            var result2 = await HttpClient.GetFromJsonAsync<Response<List<HinhThucThanhToan>>>($"https://localhost:7053/api/GiaoCas/TienMatHoaDonTrongCa?IdHoaDon={HoaDon.Id}");
+            foreach (var hinhthucthanhtoan in result2.Data)
+            {
+                TienMatHoaDon += hinhthucthanhtoan.TongTienThanhToan;
+            }
+        
+        }
+        DoanhThuTienMat = TienMatHoaDon;
+    }
+
+    private async Task BatDau()
+    {
+        if (ErrorMoney == string.Empty)
+        {
+            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(await local.GetItemAsStringAsync("Token"));
+            var IdNhanVien = jwt.Claims.FirstOrDefault(c => c.Type.Equals("Id"))?.Value;
+
+
+            var model = new GiaoCaModels.GiaoCaCreateModel()
+            {
+                    IdNhanVienTrongCa = Guid.Parse(IdNhanVien),
+                    ThoiGianNhanCa = ThoiGianNhanCa,
+                    TienBanDau = TongThanhTien,
+                    TongTienMat = 0,
+                    TrangThai = 0,
+            };
+
+            if (CaTruoc != null && TongThanhTien != CaTruoc.TongTienMatCuoiCa)
+            {
+                await Swal.FireAsync("Thông Báo", "Số Tiền Khác Với Ca Trươc Vui Lòng Kiểm Tra Lại", SweetAlertIcon.Warning);
+            }
+            else
+            {
+                var confirm = await Swal.FireAsync(new SweetAlertOptions { Title = "Bạn Muốn Bắt Đầu Ca Làm Việc", ShowConfirmButton = true, ShowCancelButton = true, Icon = SweetAlertIcon.Question });
+                if (string.IsNullOrEmpty(confirm.Value)) return;
+
+                var result = await HttpClient.PostAsJsonAsync("https://localhost:7053/api/GiaoCas", model);
+                var response = await result.Content.ReadFromJsonAsync<Response>();
+
+                if (result.IsSuccessStatusCode)
+                {
+                    var result2 = await HttpClient.GetFromJsonAsync<Response<GiaoCa>>($"https://localhost:7053/api/GiaoCas?Id={Guid.Parse(IdNhanVien)}&ThoiGian={thoigian}");
+                    if (CaTruoc != null)
+                    {
+                        await HttpClient.DeleteAsync($"https://localhost:7053/api/GiaoCas/NhanCa?Id={CaTruoc.Id}");
+                    }
+                    Ca = result2.Data;
+                    await Swal.FireAsync(new SweetAlertOptions()
+                        {
+                            TitleText = response.Message,
+                            ShowConfirmButton = true,
+                            Icon = SweetAlertIcon.Success
+                        });
+                    title = "Đang làm việc";
+                }
+                else
+                {
+                    await Swal.FireAsync(new SweetAlertOptions
+                        {
+                            TitleText = response.Message,
+                            ShowConfirmButton = true,
+                            Icon = SweetAlertIcon.Error
+                        });
+                }
+            }
+        }
+    }
+
+
+    private string ErrorMoney = string.Empty;
+    private async Task ChangeThanhTien(ChangeEventArgs e)
+    {
+        if (float.Parse(e.Value.ToString()) < 0)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                    TitleText = "Tiền Mặt Không Được Âm",
+                    ShowConfirmButton = true,
+                    Icon = SweetAlertIcon.Warning,
+            });
+            TongThanhTien = 0;
+        }
+        else
+        {
+            TongThanhTien = float.Parse(e.Value.ToString());
+            ErrorMoney = string.Empty;
+        }
+    }
+}
+

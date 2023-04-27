@@ -1,0 +1,58 @@
+﻿@inject HttpClient HttpClient
+
+<footer style="margin-top: 10px">
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-3 col-md-6">
+				<h3 data-target="#collapse_1">Quick Links</h3>
+				<div class="collapse dont-collapse-sm links" id="collapse_1">
+					<ul>
+						<li><NavLink href="/">Trang Chủ</NavLink></li>
+						<li><NavLink href="/product">Sản Phẩm</NavLink></li>
+                        <li><NavLink href="/about">About</NavLink></li>
+                    </ul>
+				</div>
+			</div>
+			<div class="col-lg-3 col-md-6">
+				<h3 data-target="#collapse_2">Nhóm Sản Phẩm</h3>
+				<div class="collapse dont-collapse-sm links" id="collapse_2">
+					<ul>
+				        @if (NhomSanPhams != null)
+				        {
+				            @foreach (var x in NhomSanPhams)
+				            {
+				                <li><NavLink href="/">@x.Ten</NavLink></li>
+				            }
+				        }		
+                    </ul>
+				</div>
+			</div>
+			<div class="col-lg-3 col-md-6">
+				<h3 data-target="#collapse_3">Contacts</h3>
+				<div class="collapse dont-collapse-sm contacts" id="collapse_3">
+					<ul>
+						<li><i class="ti-home"></i>Fpoly Hà Nội<br></li>
+						<li><i class="ti-headphone-alt"></i>+84 357503628</li>
+						<li><i class="ti-email"></i><a href="#0">minkyshop@gmail.com</a></li>
+					</ul>
+				</div>
+			</div>
+        </div>
+    </div>
+</footer>
+<!--/footer-->
+
+						@code{
+
+						    List<MinkyShopProject.Data.Models.NhomSanPhamModel>? NhomSanPhams;
+
+						    protected async override Task OnInitializedAsync()
+						    {
+						        var result = await HttpClient.GetFromJsonAsync<ResponsePagination<Data.Models.NhomSanPhamModel>>("https://localhost:7053/api/NhomSanPham/Get2");
+						        if(result != null)
+						        {
+						            NhomSanPhams = result.Data.Content;
+						        }
+						    }
+
+						}

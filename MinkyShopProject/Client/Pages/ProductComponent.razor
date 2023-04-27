@@ -1,0 +1,187 @@
+﻿@page "/product"
+@page "/product/{ten}"
+@inject IJSRuntime JSRuntime
+@using Data.Models;
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+@inject SweetAlertService Swal
+
+<main class="container margin_30">
+    <div class="row">
+        <aside class="col-lg-3" id="sidebar_fixed">
+            <div class="filter_col">
+                <div class="inner_bt"><a href="#" class="open_filters"><i class="ti-close"></i></a></div>
+                @if(ThuocTinhs != null && ThuocTinhs.Data.Content.Any())
+                {
+                    foreach (var x in ThuocTinhs.Data.Content.Select((v, i) => (i, v)))
+                    {
+                        <div class="filter_type version_2">
+                            <h4><a href="#filter_@x.i" data-toggle="collapse" class="opened">@x.v.Ten</a></h4>
+                            <div class="collapse show" id="filter_@x.i">
+                                <ul>
+                                    @foreach (var y in x.v.GiaTris)
+                                    {
+                                        <li>
+                                            <label class="container_check">
+                                                @y.Ten
+                                                <input type="checkbox" @onclick="() => { var giaTri =  GiaTris.FindIndex(c => c == y.Id); if(giaTri != -1){ GiaTris.RemoveAt(giaTri); }else{ GiaTris.Add(y.Id); } }">
+                                                <span class="checkmark"></span>
+                                            </label>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                            <!-- /filter_type -->
+                        </div>
+                    }
+                }
+                <!-- /filter_type -->
+                <div class="custom-search-input">
+                    <input type="text" placeholder="Tìm kiếm sản phẩm" style="width: 100%; border: none; padding: 10px; border-radius: 5px; margin-bottom: 15px" @bind="Ten">
+                </div>
+                <div class="buttons">
+                    <a class="btn_1" @onclick="LocGiaTri">Lọc</a> <a @onclick='() => SanPhamsSauKhiLoc = new List<SanPhamModel>()' class="btn_1 gray">Làm mới</a>
+                </div>
+            </div>
+        </aside>
+        <!-- /col -->
+        <div class="col-lg-9">
+            <div class="top_banner">
+                <div class="opacity-mask d-flex align-items-center" data-opacity-mask="rgba(0, 0, 0, 0.3)">
+                </div>
+                <img src="img/bg_cat_shoes.jpg" class="img-fluid" alt="">
+            </div>
+            <!-- /top_banner -->
+            <div id="stick_here"></div>
+            <div class="toolbox elemento_stick add_bottom_30">
+                <div class="container">
+                    <ul class="clearfix">
+                        <li>
+                            <div class="sort_select">
+                                <select name="sort" id="sort">
+                                    <option value="popularity" selected="selected">Sort by popularity</option>
+                                    <option value="rating">Sort by average rating</option>
+                                    <option value="date">Sort by newness</option>
+                                    <option value="price">Sort by price: low to high</option>
+                                    <option value="price-desc">Sort by price: high to low </option>
+                                </select>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- /toolbox -->
+            <div class="row small-gutters">
+                @if (SanPhams != null)
+                {
+                    if(SanPhamsSauKhiLoc != null && SanPhamsSauKhiLoc.Any())
+                    {
+                        @foreach (var x in SanPhamsSauKhiLoc)
+                        {
+                            <div class="col-6 col-md-4">
+                                <div class="grid_item">
+                                    <figure>
+                                        <NavLink href="@($"/product/{x.Id}")">
+                                            <img class="img-fluid lazy loaded" src="@x.Anh" data-src="@x.Anh" alt="" data-was-processed="true">
+                                        </NavLink>
+                                    </figure>
+                                    <NavLink href="@($"/product/{x.Id}")">
+                                        <h3>@x.Ten</h3>
+                                    </NavLink>
+                                    <div class="price_box">
+                                        <span class="new_price">@Helper.FormatMoney(x.BienThes?.Min(c => c.GiaBan)) - @Helper.FormatMoney( x.BienThes?.Max(c => c.GiaBan))</span>
+                                    </div>
+                                </div>
+                                <!-- /grid_item -->
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var x in SanPhams.Data.Content)
+                        {
+                            <div class="col-6 col-md-4">
+                                <div class="grid_item">
+                                    <figure>
+                                        <NavLink href="@($"/product/{x.Id}")">
+                                            <img class="img-fluid lazy loaded" src="@x.Anh" data-src="@x.Anh" alt="" data-was-processed="true">
+                                        </NavLink>
+                                    </figure>
+                                    <NavLink href="@($"/product/{x.Id}")">
+                                        <h3>@x.Ten</h3>
+                                    </NavLink>
+                                    <div class="price_box">
+                                        <span class="new_price">@Helper.FormatMoney(x.BienThes?.Min(c => c.GiaBan)) - @Helper.FormatMoney( x.BienThes?.Max(c => c.GiaBan))</span>
+                                    </div>
+                                </div>
+                                <!-- /grid_item -->
+                            </div>
+                        }
+                    }
+                }
+                <!-- /col -->
+            </div>
+        </div>
+        <!-- /col -->
+    </div>
+    <!-- /row -->
+</main>
+<!-- /container -->
+
+@code {
+    [Parameter]
+    public string Ten { get; set; } = "";
+
+    ResponsePagination<SanPhamModel>? SanPhams;
+
+    List<SanPhamModel> SanPhamsSauKhiLoc = new List<SanPhamModel>();
+
+    ResponsePagination<ThuocTinhModel>? ThuocTinhs;
+
+    List<Guid> GiaTris = new List<Guid>();
+
+    protected async override Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(Ten))
+        {
+            await LocGiaTri();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        SanPhams = await HttpClient.GetFromJsonAsync<ResponsePagination<SanPhamModel>>("https://localhost:7053/api/SanPham");
+        ThuocTinhs = await HttpClient.GetFromJsonAsync<ResponsePagination<ThuocTinhModel>>("https://localhost:7053/api/ThuocTinh");
+    }
+
+    async Task LocGiaTri()
+    {
+        if(SanPhams != null)
+        {
+            SanPhamsSauKhiLoc = new List<SanPhamModel>();
+            foreach (var x in SanPhams.Data.Content)
+            {
+                @if(x.BienThes != null)
+                {
+                    foreach (var y in x.BienThes)
+                    {
+                        if(y.BienTheChiTiets != null)
+                        {
+                            foreach (var z in y.BienTheChiTiets)
+                            {
+                                if(GiaTris.Any(c => c == z.GiaTri?.Id))
+                                {
+                                    if(Ten == null){ Ten = ""; }
+                                    if (!SanPhamsSauKhiLoc.Any(c => c.Id == x.Id) && x.Ten != null && x.Ten.ToLower().Trim().Contains(Ten.ToLower().Trim()))
+                                    {
+                                        SanPhamsSauKhiLoc.Add(x); 
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

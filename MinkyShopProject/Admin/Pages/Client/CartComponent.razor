@@ -1,0 +1,142 @@
+﻿@using MinkyShopProject.Data.Models;
+@page "/cart";
+@inject HttpClient HttpClient
+@inject SweetAlertService Swal
+
+<div class="container-fluid mt--7">
+    <div class="row">
+        @if (GioHangs?.Data.GioHangChiTiets  != null)
+        {
+            <div class="col-xl-8">
+                <div class="card">
+                    <div class="card-header bg-white border-0 pb-0">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <strong class="mb-0">Giỏ hàng</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var x in GioHangs.Data.GioHangChiTiets.Select((Value, Index) => new { Value, Index }))
+                        {
+                            <div class="card mb-2">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-around align-items-center">
+                                        <span class="text-sm text-bold">@x.Value.BienThe?.SanPham?.Ten</span>
+                                        <div class="d-flex justify-content-center">
+                                            <button class="btn btn-xs mb-0 me-1"><i class="fa fa-minus"></i></button>
+                                            <input type="number" class="form-control h-25" style="width: 30%" value="@x.Value.SoLuong"/>
+                                            <button class="btn btn-xs mb-0 ms-1"><i class="fa fa-plus"></i></button>
+                                        </div>
+                                        <button class="btn btn-danger btn-sm m-0" @onclick="() => Remove(x.Value.BienThe.Id)">Xóa</button>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <img class="w-10" src="@x.Value.BienThe?.Anh" />
+                                        <span class="text-sm">@string.Join(" + ", x.Value.BienThe?.BienTheChiTiets.Select(c => c.GiaTri.Ten))</span>
+                                        <span class="text-sm">@Helper.FormatMoney(x.Value.BienThe?.GiaBan) x @x.Value.SoLuong</span>
+                                        <span class="text-sm">@Helper.FormatMoney(x.Value.BienThe?.GiaBan * x.Value.SoLuong)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div>
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <strong class="mb-0">Hóa đơn</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-block">
+                                <div class="form-group">
+                                    <div class="d-flex justify-content-between">
+                                        <label class="form-control-label" for="input-name">Tên người nhận</label>
+                                    </div>
+                                    <input type="text" id="input-name" class="form-control form-control-alternative" @bind="HoaDon.TenNguoiNhan" placeholder="Nhập tên người nhận">
+                                </div>
+                            </div>
+                            <div class="d-block">
+                                <div class="form-group">
+                                    <div class="d-flex justify-content-between">
+                                        <label class="form-control-label" for="input-address">Địa chỉ</label>
+                                    </div>
+                                    <input type="text" id="input-address" class="form-control form-control-alternative" @bind="HoaDon.DiaChi" placeholder="Nhập địa chỉ">
+                                </div>
+                            </div>
+                            <div class="d-block">
+                                <div class="form-group">
+                                    <div class="d-flex justify-content-between">
+                                        <label class="form-control-label" for="input-phone">Số điện thoại</label>
+                                    </div>
+                                    <input type="text" id="input-phone" class="form-control form-control-alternative" @bind="HoaDon.Sdt" placeholder="Nhập số điện thoại">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer pt-0">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <button class="btn btn-primary" type="submit" @onclick="Add">Xác nhận</button>
+                                <h4 class="text-muted text-right text-sm text-bolder">Tổng tiền: @string.Format("{0:0,0}", GioHangs.Data.GioHangChiTiets.Sum(c => c.DonGia * c.SoLuong)) VNĐ</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }else{
+            <div class="col-xl-12 order-xl-1">
+                <div class="card bg-secondary shadow font-weight-bold" style="height: 200px;display: flex;justify-content: center;align-items: center;">
+                    <h3><strong>Không có sản phẩm</strong></h3>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code{
+    ResponseObject<GioHangModel>? GioHangs;
+
+    HoaDonModel HoaDon = new HoaDonModel();
+
+    protected async override Task OnInitializedAsync()
+    {
+        GioHangs = await HttpClient.GetFromJsonAsync<ResponseObject<GioHangModel>>("https://localhost:7053/api/GioHang?id=8b00e3e6-9743-453e-9c97-c7b480772948");
+    }
+
+    async Task Remove(Guid id)
+    {
+        var status = await HttpClient.DeleteAsync($"https://localhost:7053/api/GioHang?id={id}");
+        if (status.IsSuccessStatusCode)
+        {
+            await Swal.FireAsync("Thông báo", "Xóa thành công", SweetAlertIcon.Success);
+            return;
+        }
+        await Swal.FireAsync("Thông báo", "Xóa thất bại", SweetAlertIcon.Success);
+    }
+
+    async Task Add()
+    {
+        if(GioHangs?.Data.GioHangChiTiets != null)
+        {
+            HoaDon.IdKhachHang = Guid.Parse("8b00e3e6-9743-453e-9c97-c7b480772948");
+            HoaDon.LoaiDonHang = 1;
+            HoaDon.TrangThai = Data.Enums.TrangThaiHoaDon.Ship;
+            foreach (var x in GioHangs.Data.GioHangChiTiets)
+            {
+                HoaDon.HoaDonChiTiets.Add(new HoaDonChiTietModel() { IdBienThe = x.IdBienThe, DonGia = x.DonGia, SoLuong = x.SoLuong });
+            }
+            HoaDon.TongTien = HoaDon.HoaDonChiTiets.Sum(c => c.SoLuong * c.DonGia);
+        }
+        var status = await HttpClient.PostAsJsonAsync<HoaDonModel>("https://localhost:7053/api/HoaDon", HoaDon);
+        if(status.IsSuccessStatusCode)
+        {
+            await HttpClient.DeleteAsync("https://localhost:7053/api/GioHang?id=" + HoaDon.IdKhachHang);
+            GioHangs = await HttpClient.GetFromJsonAsync<ResponseObject<GioHangModel>>("https://localhost:7053/api/GioHang?id=8b00e3e6-9743-453e-9c97-c7b480772948");
+            await Swal.FireAsync("", "Thêm thành công", SweetAlertIcon.Success);
+        }
+    }
+}

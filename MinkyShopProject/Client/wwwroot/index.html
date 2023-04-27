@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Minky Shop</title>
+    <base href="/" />
+
+    <!-- Favicons-->
+    <link rel="shortcut icon" href="./img/logo.png" type="image/x-icon">
+    <link rel="apple-touch-icon" type="image/x-icon" href="img/apple-touch-icon-57x57-precomposed.png">
+    <link rel="apple-touch-icon" type="image/x-icon" sizes="72x72" href="img/apple-touch-icon-72x72-precomposed.png">
+    <link rel="apple-touch-icon" type="image/x-icon" sizes="114x114" href="img/apple-touch-icon-114x114-precomposed.png">
+    <link rel="apple-touch-icon" type="image/x-icon" sizes="144x144" href="img/apple-touch-icon-144x144-precomposed.png">
+
+    <!-- GOOGLE WEB FONT -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,900&display=swap" rel="stylesheet">
+
+    <!-- BASE CSS -->
+    <link href="css/bootstrap.custom.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+
+    <!-- HOME CSS -->
+    <link href="css/home_1.css" rel="stylesheet">
+
+    <!-- PRODUCT CSS -->
+    <link href="css/listing.css" rel="stylesheet">
+
+    <!-- PRODUCT_DETAIL CSS -->
+    <link href="css/product_page.css" rel="stylesheet">
+
+    <!-- ERROR CSS -->
+    <link href="css/error_track.css" rel="stylesheet">
+
+    <!-- CART CSS -->
+    <link href="css/cart.css" rel="stylesheet">
+
+    <!-- CHECKOUT CSS -->
+    <link href="css/checkout.css" rel="stylesheet">
+
+    <!-- ACCOUNT CSS -->
+    <link href="css/account.css" rel="stylesheet">
+
+    <!-- REVIEW CSS -->
+    <link href="css/leave_review.css" rel="stylesheet">
+
+    <!-- FAQ CSS -->
+    <link href="css/faq.css" rel="stylesheet">
+
+    <!-- ABOUT CSS -->
+    <link href="css/about.css" rel="stylesheet">
+
+    <!-- BLOG CSS -->
+    <link href="css/blog.css" rel="stylesheet">
+
+    <!-- CONTACT CSS -->
+    <link href="css/contact.css" rel="stylesheet">
+
+    <style>
+        .valid.modified:not([type=checkbox]) {
+            outline: 1px solid #26b050;
+        }
+
+        .invalid {
+            outline: 1px solid red;
+        }
+
+        .validation-message {
+            color: red;
+        }
+
+        #blazor-error-ui {
+            background: lightyellow;
+            bottom: 0;
+            box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+            display: none;
+            left: 0;
+            padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+        }
+
+            #blazor-error-ui .dismiss {
+                cursor: pointer;
+                position: absolute;
+                right: 0.75rem;
+                top: 0.5rem;
+            }
+
+        .blazor-error-boundary {
+            background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
+            padding: 1rem 1rem 1rem 3.7rem;
+            color: white;
+        }
+
+            .blazor-error-boundary::after {
+                content: "An error has occurred."
+            }
+   
+        @font-face {
+            font-family: CCodeQR;
+            src: url("fonts/CCodeQR_Trial.eot");
+            src: local("CCodeQR_Trial"), url("fonts/CCodeQR_Trial.otf") format("opentype"), url("fonts/CCodeQR_Trial.woff") format("woff");
+        }
+
+        #barcodeFonts {
+            font-weight: normal;
+            font-style: normal;
+            line-height: normal;
+            font-family: 'CCodeQR', sans-serif;
+            font-size: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+
+    <!-- COMMON SCRIPT -->
+    <script src="js/common_scripts.min.js"></script>
+    <script src="js/main.js"></script>
+
+    <!-- PRODUCT SCRIPT -->
+    <script src="js/specific_listing.js"></script>
+
+    <!-- PRODUCT_DETAIL SCRIPT -->
+    <script src="js/carousel_with_thumbs.js"></script>
+
+    <!-- INDEX SCRIPT -->
+    <script src="js/carousel-home.min.js"></script>
+
+    <script src="_content/CurrieTechnologies.Razor.SweetAlert2/sweetAlert2.min.js"></script>
+</body>
+</html>

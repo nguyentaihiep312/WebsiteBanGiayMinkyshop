@@ -1,0 +1,240 @@
+﻿@page "/admin/employee/{Page:int}"
+<PageTitle>Nhân Viên</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        @if (viewform)
+        {
+            <div class="col-md-12 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <EditForm Model="Model" OnValidSubmit="Submit">
+                            <div class="row">
+                                @if(Model.Anh != null){
+                                    <div class="col-md-12 d-flex justify-content-center mb-3">
+                                        <img class="img-thumbnail" src="@Model.Anh" style="width: 200px;border-radius: 50%;height: 200px;" />
+                                    </div>
+                                }
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="d-flex justify-content-between">
+                                            <label>Mã nhân viên (<strong class="text-danger">*</strong>)</label>
+                                        </div>
+                                        <div>
+                                            <input type="text" class="form-control" id="exampleFormControlInput1" @bind-value="Model.Ma" disabled>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="d-flex justify-content-between">
+                                            <label class="form-control-label">Tên nhân viên (<strong class="text-danger">*</strong>)</label>
+                                            <label class="form-control-label text-danger">@(ErrorName)</label>
+                                        </div>
+                                        <div>
+                                            <input type="text" class="form-control" id="exampleFormControlInput1" @bind-value="Model.Ten" @oninput="ValidateTen">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="d-flex justify-content-between">
+                                            <label class="form-control-label">Số điện thoại (<strong class="text-danger">*</strong>)</label>
+                                            <label class="form-control-label text-danger">@(ErrorSdt)</label>
+                                        </div>
+                                        <div>
+                                            <input type="text" class="form-control" id="exampleFormControlInput1" @bind-value="Model.Sdt" @oninput="ValidateSdt">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="d-flex justify-content-between">
+                                            <label class="form-control-label">Email (<strong class="text-danger">*</strong>)</label>
+                                            <label class="form-control-label text-danger">@(ErrorEmail)</label>
+                                        </div>
+                                        <div>
+                                            <input type="text" class="form-control" id="exampleFormControlInput1" @bind-value="Model.Email" @oninput="ValidateEmail">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="d-flex justify-content-between">
+                                            <label class="form-control-label">Mật khẩu (<strong class="text-danger">*</strong>)</label>
+                                            <label class="form-control-label text-danger">@(ErrorPass)</label>
+                                        </div>
+                                        <div>
+                                            <input type="text" class="form-control" id="exampleFormControlInput1" @bind-value="Model.MatKhau" @oninput="ValidatePass">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="d-flex justify-content-between">
+                                            <label class="form-control-label">Ảnh nhân viên (<strong class="text-danger">*</strong>)</label>
+                                            <label class="form-control-label text-danger">@(ErrorAnh)</label>
+                                        </div>
+                                        <div>
+                                            <InputFile class="form-control" id="exampleFormControlInput1" OnChange="UploadImage" multiple></InputFile>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div>
+                                            <label>Giới tính (<strong class="text-danger">*</strong>)</label>
+                                        </div>
+                                        <div class="d-flex">
+                                            <InputRadioGroup @bind-Value="Model.GioiTinh">
+                                                <div class="form-check">
+                                                    <InputRadio class="form-check-input" id="customRadio2" Value="false" />
+                                                    <label class="custom-control-label" for="customRadio2">Nữ</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <InputRadio class="form-check-input mx-2" id="customRadio1" Value="true" />
+                                                    <label class="custom-control-label" for="customRadio1">Nam</label>
+                                                </div>
+                                            </InputRadioGroup>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="d-flex justify-content-between">
+                                            <label class="form-control-label">Ngày sinh (<strong class="text-danger">*</strong>)</label>
+                                            <label class="form-control-label text-danger">@(ErrorDate)</label>
+                                        </div>
+                                        <div>
+                                            <input type="date" class="form-control" id="exampleFormControlInput1" @onchange="ValidateDate">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div>
+                                            <label>Vai trò (<strong class="text-danger">*</strong>)</label>
+                                        </div>
+                                        <div>
+                                            <InputSelect class="form-control" @bind-Value="Model.VaiTro">
+                                                <option value="0">Quản lí</option>
+                                                <option value="1">Nhân viên</option>
+                                            </InputSelect>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="d-flex justify-content-between">
+                                            <label>Địa chỉ (<strong class="text-danger">*</strong>)</label>
+                                            <ValidationMessage class="form-control-label text-danger" For="() => Model.DiaChi"></ValidationMessage>
+                                        </div>
+                                        <div>
+                                            <input type="text" class="form-control" id="exampleFormControlInput1" @bind-value="Model.DiaChi">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end mt-3">
+                                <button class="btn btn-secondary btn-sm mx-1" @onclick="CancelForm">Hủy</button>
+                                <button type="submit" class="btn btn-success btn-sm mx-1">Lưu thông tin</button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    @if(!viewform){
+                        <div class="d-flex justify-content-end">
+                            <button class="btn btn-success btn-sm mx-1" @onclick="ViewForm">Thêm nhân viên</button>
+                        </div>
+                    }
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="row">
+                                <div class="col-3">
+                                    <select class="js-choice" @onchange="FilterWithStatus">
+                                        <option value="">Tất cả trạng thái</option>
+                                        <option value="1">Hoạt động</option>
+                                        <option value="0">Không hoạt động</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <select class="js-choice2" @onchange="FilterWithRole">
+                                        <option value="">Tất cả vai trò</option>
+                                        <option value="0">Quản lí</option>
+                                        <option value="1">Nhân viên</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <select class="js-choice-size" @onchange="ChangePerPage">
+                                        @for (int i = 1; i < 5; i++)
+                                        {
+                                            var index = i * 5;
+                                            <option value="@index">@index kết quả</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <input class="form-control" placeholder="Nhập tên,mã hoặc địa chỉ nhân viên..." @onchange="Search"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle text-center">
+                            <thead>
+                                <tr>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Ảnh</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Mã nhân viên</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tên nhân viên</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Trạng thái</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Vai trò</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Ngày tạo</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if(Response.Data.Data.Count() > 0){
+                                    @foreach (var nhanvien in lstNhanVien)
+                                    {
+                                        <tr>
+                                            <td class="align-middle text-center text-sm"><img src="@(nhanvien.Anh)" style="width: 100px;border-radius: 50%;height: 100px;" /></td>
+                                            <td class="align-middle text-center text-sm">@(nhanvien.Ma)</td>
+                                            <td class="align-middle text-center text-sm">@(nhanvien.Ten)</td>
+                                            <td class="align-middle text-center">
+                                                <div class="form-check form-switch d-flex justify-content-center">
+                                                    <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" checked="@(nhanvien.TrangThai == 0 ? false : true)" @onchange="() => ChangeStatus(nhanvien.Id,nhanvien.TrangThai)"/>
+                                                </div>
+                                            </td>
+                                            <td class="align-middle text-center text-sm">@(nhanvien.VaiTro == 0 ? "Quản lí" : "Nhân viên")</td>
+                                            <td class="align-middle text-center text-sm">@(nhanvien.NgayTao.ToShortDateString())</td>
+                                            <td class="text-secondary text-xs font-weight-bold align-middle">
+                                                <a data-bs-toggle="tooltip" data-bs-original-title="Delete product" class="mx-2" @onclick="() => Remove(nhanvien.Id)">
+                                                    <i class="fas fa-trash text-danger" aria-hidden="true"></i>
+                                                </a>
+                                                <a href="javascript:;" data-bs-toggle="tooltip" data-bs-original-title="Delete product" class="mx-2" @onclick="() => GetNhanVien(nhanvien.Id)">
+                                                    <i class="fa fa-pen text-warning" aria-hidden="true"></i>
+                                                </a>
+                                                @*<a href="javascript:;" data-bs-toggle="tooltip" data-bs-original-title="Delete product" class="mx-2">
+                                                    <i class="fa fa-eye text-primary" aria-hidden="true"></i>
+                                                </a>*@
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                        <tr>
+                                            <td colspan="6" class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Không Có Dữ Liệu</td>
+                                        </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                    <div class="d-flex justify-content-center">
+                        <nav aria-label="Page navigation example">
+                            <ul class="pagination pagination-primary">
+                                @for(int i = 1;i <= Response.Data.Pages;i++){
+                                    <li class="page-item"><a class="page-link" href="/admin/employee/@(i)">@(i)</a></li>
+                                }
+                            </ul>
+                        </nav>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>

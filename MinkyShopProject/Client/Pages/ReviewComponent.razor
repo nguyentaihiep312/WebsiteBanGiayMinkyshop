@@ -1,0 +1,102 @@
+﻿@page "/review/{id:guid}"
+@using MinkyShopProject.Data.Models;
+@inject HttpClient HttpClient;
+@inject NavigationManager NavigationManager;
+@inject SweetAlertService Swal;
+
+<main>
+	@if(HoaDon != null && HoaDon?.DanhGia == null)
+	{
+		<div class="container margin_60_35">
+			<div class="row justify-content-center">
+				<div class="col-lg-8">
+					<div class="write_review">
+						<h1>Viết review cho đơn hàng </h1>
+						<div class="rating_submit">
+							<div class="form-group">
+								<label>Để lại đánh giá</label>
+								<span class="rating mb-0">
+									<input type="radio" class="rating-input" id="5_star" name="rating-input" value="5 Stars" @onclick="() => DanhGia.SoDanhGia = 5"><label for="5_star" class="rating-star"></label>
+									<input type="radio" class="rating-input" id="4_star" name="rating-input" value="4 Stars" @onclick="() => DanhGia.SoDanhGia = 4"><label for="4_star" class="rating-star"></label>
+									<input type="radio" class="rating-input" id="3_star" name="rating-input" value="3 Stars" @onclick="() => DanhGia.SoDanhGia = 3"><label for="3_star" class="rating-star"></label>
+									<input type="radio" class="rating-input" id="2_star" name="rating-input" value="2 Stars" @onclick="() => DanhGia.SoDanhGia = 2"><label for="2_star" class="rating-star"></label>
+									<input type="radio" class="rating-input" id="1_star" name="rating-input" value="1 Star" @onclick="() => DanhGia.SoDanhGia = 1"><label for="1_star" class="rating-star"></label>
+								</span>
+							</div>
+						</div>
+						<!-- /rating_submit -->
+						<div class="form-group">
+							<label>Nội dung</label>
+							<textarea class="form-control" style="height: 180px;" @bind="DanhGia.NoiDung"></textarea>
+						</div>
+                        <button @onclick="DanhGiaConfirm" class="btn_1">Xác nhận</button>
+					</div>
+				</div>
+			</div>
+			<!-- /row -->
+		</div>
+	}
+	else
+	{
+		<p>Không tìm thấy hóa đơn hoặc hóa đơn đã đc đánh giá</p>
+	}
+	<!-- /container -->
+</main>
+<!--/main-->
+
+@code {
+	HoaDonModel? HoaDon;
+
+	DanhGiaCreateModel DanhGia = new DanhGiaCreateModel();
+
+	[Parameter]
+	public Guid Id { get; set; }
+
+	protected async override Task OnInitializedAsync()
+	{
+		var result = await HttpClient.GetFromJsonAsync<ResponseObject<HoaDonModel>>("https://localhost:7053/api/hoadon" + "/" + Id);
+		if (result != null)
+		{
+			HoaDon = result.Data;
+			DanhGia.IdHoaDon = result.Data.Id;
+			DanhGia.IdKhachHang = (Guid)result.Data.IdKhachHang;
+		}
+	}
+
+	async Task DanhGiaConfirm()
+	{
+		if(DanhGia.SoDanhGia == 0)
+		{
+			await Swal.FireAsync("", "Vui lòng để lại đánh giá", SweetAlertIcon.Error);
+		}
+		else if (string.IsNullOrEmpty(DanhGia.NoiDung))
+		{
+			await Swal.FireAsync("", "Vui lòng để lại nội dung đánh giá", SweetAlertIcon.Error);
+		}
+		else
+		{
+			try
+			{
+				var confirm = await Swal.FireAsync(new SweetAlertOptions { Text = "Bạn Có Chắc Muốn Đánh Giá Cho Sản Phẩm " + DanhGia.SoDanhGia + " sao", ShowConfirmButton = true, ShowCancelButton = true, Icon = SweetAlertIcon.Warning });
+
+				if (string.IsNullOrEmpty(confirm.Value)) return;
+
+				var status = await HttpClient.PostAsJsonAsync("https://localhost:7053/api/danhgia", DanhGia);
+				if (status.IsSuccessStatusCode)
+				{
+					await Swal.FireAsync("", "Đánh giá thành công", SweetAlertIcon.Success);
+					NavigationManager.NavigateTo("/");
+				}
+				else
+				{
+					await Swal.FireAsync("", "Đánh giá thất bại", SweetAlertIcon.Error);
+				}
+			}
+			catch (Exception)
+			{
+				await Swal.FireAsync("", "Đánh giá thất bại", SweetAlertIcon.Error);
+			}
+		}
+	}
+}
+

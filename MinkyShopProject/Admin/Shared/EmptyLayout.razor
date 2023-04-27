@@ -1,0 +1,16 @@
+﻿@using Blazored.LocalStorage;
+@inherits LayoutComponentBase;
+@inject NavigationManager NavigationManager;
+@inject ILocalStorageService Local;
+
+<main class="main-content border-radius-lg ">
+    @Body
+</main>
+
+@code{
+    protected async override Task OnInitializedAsync()
+    {
+        if (await Local.GetItemAsStringAsync("Token") == null) NavigationManager.NavigateTo("/login");
+    }
+}
+

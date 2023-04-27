@@ -1,0 +1,389 @@
+﻿@page "/admin/voucher"
+@page "/admin/voucher/page/{page:int}"
+@using MinkyShopProject.Data.Models;
+@using System.IdentityModel.Tokens.Jwt;
+@inject SweetAlertService Swal;
+@inject HttpClient HttpClient;
+@inject IJSRuntime JSRuntime
+<PageTitle>Voucher</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-3">
+                            <select class="js-choice" @onchange='async (ui) =>{ Filter.TrangThai = int.TryParse(ui.Value?.ToString(), out int numberLocal) ? int.Parse(ui.Value.ToString() ?? "") : null; await Reload(); }'>
+                                <option>Tất Cả</option>
+                                <option value="1">Đang Bán</option>
+                                <option value="0">Ngừng Bán</option>
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <select class="js-choice-size" @onchange='async (ui) =>{ Filter.Size = int.TryParse(ui.Value?.ToString(), out int numberLocal) ? int.Parse(ui.Value.ToString() ?? "") : 2; await Reload(); }'>
+                                <option value="2">2 kết quả</option>
+                                @for (int i = 1; i < 5; i++)
+                                {
+                                    var index = i * 5;
+                                    <option value="@index">@index kết quả</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <input class="form-control" placeholder="Nhập tên voucher" @onchange="async e =>{ Filter.Ten = e.Value?.ToString(); await Reload(); }" />
+                        </div>
+                    </div>
+                    <EditForm Model="Voucher" OnSubmit="AddAsync">
+                        <DataAnnotationsValidator></DataAnnotationsValidator>
+                        <div class="col-12 mt-2 text-end">
+                            @if(Show){
+                                if(Voucher.Id != Guid.Empty)
+                                {
+                                    <button class="btn btn-warning btn-sm me-3" @onclick="() => { Voucher = new VoucherCreateModel(); Show = false; }">Hủy Chỉnh Sửa</button>
+                                    <button class="btn btn-primary btn-sm me-3" type="submit">Lưu Dữ Liệu</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-primary btn-sm me-3" type="submit">Lưu Dữ Liệu</button>
+                                }                         
+                            }
+                            <button class="btn btn-@(Show ? "danger" : "success") btn-sm" type="button" @onclick="() => Show = !Show">@(!Show ? "Thêm Dữ Liệu" : "Ẩn")</button>
+                        </div>
+                        @if(Show){
+                            <div class="row mb-3 gy-3">
+                                <div class="col-6">
+                                    <label>Tên Voucher <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" @bind="Voucher.Ten">
+                                </div>
+                                <div class="col-6">
+                                    <label>Mã Voucher</label>
+                                    <input type="text" class="form-control" @bind="Voucher.Ma">
+                                </div>
+                                <div class="col-6">
+                                    <label>Hình Thức Giảm Giá</label>
+                                    <div class="d-flex">
+                                        <div class="form-check me-3">
+                                            <input class="form-check-input" type="radio" name="flexRadioDefault2" @onclick="() => Voucher.HinhThucGiamGia = 0" checked>
+                                            <label class="custom-control-label">Phần Trăm</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="flexRadioDefault2" @onclick="() => Voucher.HinhThucGiamGia = 1">
+                                            <label class="custom-control-label">Giá Tiền</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label>Ngày Kết Thúc</label>
+                                    <input class="form-control" type="datetime-local" @bind="Voucher.NgayKetThuc">
+                                </div>
+                                <div class="col-6">
+                                    <label>Số lượng</label>
+                                    <input type="number" class="form-control" @bind="Voucher.SoLuong">
+                                </div>
+                                <div class="col-6">
+                                    <label>Số tiền cần</label>
+                                    <input type="text" class="form-control" @oninput='e => Voucher.SoTienCan = float.Parse(e.Value?.ToString() ?? "")' value="@string.Format("{0:0,0}", Voucher.SoTienCan)" onchange="if(/^[0-9.]+$/.test(this.value) == false){ this.value = this.value.replace(/[^\d.]/g,'') }">
+                                </div>
+                                <div class="col-6">
+                                    <label>Số tiền giảm</label>
+                                    @if(Voucher.HinhThucGiamGia == 0)
+                                    {
+                                        <input type="number" class="form-control"  @bind="Voucher.SoTienGiam" min="1" max="100">
+                                    }else{
+                                        <input type="text" class="form-control" @oninput='e => Voucher.SoTienGiam = float.Parse(e.Value?.ToString() ?? "")' value="@string.Format("{0:0,0}", Voucher.SoTienGiam)">
+                                    }
+                                </div>
+                                <div class="col-6">
+                                    <label>Trạng Thái</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" @onchange="() => Voucher.TrangThai = Voucher.TrangThai == 0 ? 1 : 0" checked="">
+                                        <label class="form-check-label" for="flexSwitchCheckDefault">Trạng Thái</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label>Mô tả</label>
+                                    <textarea class="form-control" @bind="Voucher.MoTa" rows="3"></textarea>
+                                </div>
+                            </div>
+                        }
+                    </EditForm>
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle text-center">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Mã</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-Ten" ? "+Ten" : "-Ten"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Tên</span>
+                                            @if (Filter.Sort != "-NgayTao")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-HinhThucGiamGia" ? "+HinhThucGiamGia" : "-HinhThucGiamGia"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Kiểu Giảm Giá</span>
+                                            @if (Filter.Sort != "-HinhThucGiamGia")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-NgayApDung" ? "+NgayApDung" : "-NgayApDung"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Ngày Bắt Đầu</span>
+                                            @if (Filter.Sort != "-NgayApDung")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-NgayKetThuc" ? "+NgayKetThuc" : "-NgayKetThuc"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Ngày Kết Thúc</span>
+                                            @if (Filter.Sort != "-NgayKetThuc")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-SoTienCan" ? "+SoTienCan" : "-SoTienCan"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Số Tiền Cần</span>
+                                            @if (Filter.Sort != "-SoTienCan")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-SoTienGiam" ? "+SoTienGiam" : "-SoTienGiam"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Số Tiền Giảm</span>
+                                            @if (Filter.Sort != "-SoTienGiam")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-TrangThai" ? "+TrangThai" : "-TrangThai"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Trạng Thái</span>
+                                            @if (Filter.Sort != "-TrangThai")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Vouchers == null)
+                                {
+                                    <tr>
+                                        <td colspan="9">
+                                            <div class="spinner-grow text-primary" role="status">
+                                                <span class="sr-only">Loading...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    if (Vouchers.Data.Content.Count() > 0)
+                                    {
+                                        foreach (var x in Vouchers.Data.Content.Select((Value, Index) => (Index, Value)))
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <span class="text-secondary text-xs font-weight-bold">@(x.Value.Ma)</span>
+                                                </td>
+                                                <td style="width: 20%">
+                                                    <span class="text-secondary text-xs font-weight-bold">@x.Value.Ten</span>
+                                                </td>
+                                                <td class="w-25">
+                                                    <span class="text-secondary text-xs font-weight-bold">@(x.Value.HinhThucGiamGia == 0 ? "Phần Trăm" : "Giá Tiền")</span>
+                                                </td>
+                                                <td class="align-middle text-center text-sm">
+                                                    <span class="text-secondary text-xs font-weight-bold">@x.Value.NgayApDung</span>
+                                                </td>
+                                                <td class="align-middle text-center text-sm">
+                                                    <span class="text-secondary text-xs font-weight-bold">@x.Value.NgayKetThuc</span>
+                                                </td>
+                                                <td class="align-middle text-center text-sm">
+                                                    <span class="text-secondary text-xs font-weight-bold">@Helper.FormatMoney(x.Value.SoTienCan)</span>
+                                                </td>
+                                                <td class="align-middle text-center text-sm">
+                                                    <span class="text-secondary text-xs font-weight-bold">@(x.Value.HinhThucGiamGia == 0 ? x.Value.SoTienGiam : Helper.FormatMoney(x.Value.SoTienGiam))</span>
+                                                </td>
+                                                <td class="align-middle text-center p-0" style="width: 16%">
+                                                    <div class="form-check form-switch justify-content-center">
+                                                        <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" @onchange='async() => { x.Value.TrangThai = x.Value.TrangThai == 1 ? 0 : 1; await UpdateAsync(x.Index); }' @attributes='@(x.Value.TrangThai == 0 ? new Dictionary<string, object>() { { "checked", "" } } : null)'>
+                                                    </div>
+                                                </td>
+                                                <td class="text-sm">
+                                                    <a href="javascript:;" class="me-3" data-bs-toggle="tooltip" data-bs-original-title="Edit product" @onclick="() => { Voucher = Helper.ConvertJson<VoucherCreateModel>(x.Value); Show = true; }">
+                                                        <i class="fas fa-user-edit text-warning" aria-hidden="true"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="9" class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Không Có Dữ Liệu</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <MinkyShopProject.Admin.Shared.PaginationComponent Model="Vouchers" Url="admin/voucher" /> 
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int Page { get; set; }
+
+    Uri Url = new Uri("https://localhost:7053/api/voucher");
+
+    VoucherQueryModel Filter = new VoucherQueryModel() { Size = 5, Sort = "-NgayTao" };
+
+    bool Show = false;
+
+    MinkyShopProject.Common.ResponsePagination<VoucherModel>? Vouchers;
+
+    VoucherCreateModel Voucher = new VoucherCreateModel();
+
+    [Inject]
+    private ILocalStorageService local { get; set; } = null!;
+
+    [Inject]
+    public NavigationManager Navigation { get; set; } = null!;
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("choiceLoad", "{'searchEnabled': false}", ".js-choice");
+            await JSRuntime.InvokeVoidAsync("choiceLoad", "{'searchEnabled': false}", ".js-choice-size");
+        }
+    }
+
+    protected async override Task OnParametersSetAsync()
+    {
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(await local.GetItemAsStringAsync("Token"));
+        var Role = jwt.Claims.FirstOrDefault(c => c.Type.Equals("VaiTro"))?.Value;
+        if (Role == "1")
+        {
+            Navigation.NavigateTo("/admin");
+            await Swal.FireAsync("Thông báo", "Bạn Không Có Quyền Truy Cập Quản Lí Voucher", SweetAlertIcon.Warning);
+        }
+        await Reload();
+    }
+
+    async Task AddAsync(EditContext context)
+    {
+        if (context.Validate())
+        {
+            var confirm = await Swal.FireAsync(new SweetAlertOptions { Text = "Bạn Có Chắc Muốn Thao Tác", ShowConfirmButton = true, ShowCancelButton = true, Icon = SweetAlertIcon.Warning });
+
+            if (string.IsNullOrEmpty(confirm.Value)) return;
+
+            var status = Voucher.Id == Guid.Empty ? await HttpClient.PostAsJsonAsync<VoucherCreateModel>(Url, Voucher) : await HttpClient.PutAsJsonAsync<VoucherCreateModel>(Url.AddQuery("id", Voucher.Id.ToString()), Helper.ConvertJson<VoucherCreateModel>(Voucher));
+
+            if (status.IsSuccessStatusCode)
+            {
+                Voucher = new VoucherCreateModel();
+                Show = false;
+                await Swal.FireAsync("Thông Báo", "Thêm thành công", SweetAlertIcon.Success);
+                await Reload();
+            }
+            else
+            {
+                await Swal.FireAsync("Thông Báo", "Mã Voucher Bị Trùng", SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+            await Swal.FireAsync("", string.Join("<br>", context.GetValidationMessages().Select(c => c)), SweetAlertIcon.Error);
+        }
+    }
+
+    async Task UpdateAsync(int index)
+    {
+        var voucher = Vouchers?.Data.Content[index];
+
+        if(voucher != null)
+        {
+            var status = await HttpClient.PutAsJsonAsync<VoucherCreateModel>(Url.AddQuery("id", voucher.Id.ToString()), Helper.ConvertJson<VoucherCreateModel>(voucher));
+
+            if (status.IsSuccessStatusCode)
+            {
+                await Swal.FireAsync("Thông Báo", "Sửa thành công", SweetAlertIcon.Success);
+                await Reload();
+            }
+        }
+    }
+
+    async Task DeleteAsync(int index)
+    {
+        var confirm = await Swal.FireAsync(new SweetAlertOptions { Text = "Bạn Có Chắc Muốn Xóa", ShowConfirmButton = true, ShowCancelButton = true, Icon = SweetAlertIcon.Warning });
+
+        if (string.IsNullOrEmpty(confirm.Value)) return;
+
+        var voucher = Vouchers?.Data.Content[index];
+
+        if(voucher != null)
+        {
+            var result = await HttpClient.DeleteAsync(Url.AddQuery("id", voucher.Id.ToString()));
+
+            if (result.IsSuccessStatusCode)
+            {
+                Vouchers?.Data.Content.Remove(voucher);
+                await Swal.FireAsync("Thông Báo", "Xóa thành công", SweetAlertIcon.Success);
+            }
+        }
+    }
+
+    async Task Reload()
+    {
+        if (Page == 0) Page = 1;
+        Vouchers = await HttpClient.GetFromJsonAsync<ResponsePagination<VoucherModel>>(Url.AddQuery("page", Page.ToString()).AddQuery("size", Filter.Size.ToString() ?? "5").AddQuery("trangthai", Filter.TrangThai.ToString() ?? "").AddQuery("ten", Filter.Ten ?? "").AddQuery("sort", Filter.Sort));
+    }
+}

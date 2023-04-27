@@ -1,0 +1,156 @@
+﻿@page "/trackorder"
+@using MinkyShopProject.Data.Models
+@inject HttpClient HttpClient
+@inject Blazored.SessionStorage.ISessionStorageService Session
+@inject SweetAlertService Swal;
+
+<main class="bg_gray">
+	<div class="container margin_30">
+		<div class="table-responsive">
+			<table class="table table-bordered">
+				<thead>
+					<tr>
+						<td>STT</td>
+						<td>Mã Đơn Hàng</td>
+						<td>Ngày Đặt Hàng</td>
+						<td>Số Sản Phẩm</td>
+						<td>Trạng Thái</td>
+						<td>
+							<input class="form-control" @bind="GhiChuHuyDonHang" />
+						</td>
+					</tr>
+				</thead>
+				<tbody>
+					@if(HoaDon != null)
+					{
+						foreach (var x in HoaDon.Data.Select((v, i) => (i, v)))
+						{
+							<tr>
+								<td style="vertical-align: middle">@(x.i + 1)</td>
+								<td style="vertical-align: middle">@x.v.Ma</td>
+								<td style="vertical-align: middle">@x.v.NgayTao</td>
+								<td style="vertical-align: middle">@x.v.HoaDonChiTiets.Count()</td>
+								<td style="vertical-align: middle">
+									@{
+										var trangThaiGiaoHang = "";
+										if(x.v.LoaiDonHang == 2)
+										{
+											@switch (x.v.TrangThaiGiaoHang)
+											{
+												case 0:
+													trangThaiGiaoHang = "Chờ Xác Nhận";
+													break;
+												case 1:
+													trangThaiGiaoHang = "Chờ Lấy Hàng";
+													break;
+												case 2:
+													trangThaiGiaoHang = "Đang Giao";
+													break;
+												case 3:
+													trangThaiGiaoHang = "Đã Giao";
+													break;
+												case 4:
+													trangThaiGiaoHang = "Đã Hủy";
+													break;
+												case 5:
+													trangThaiGiaoHang = "Chỉ Nhận Một Phần";
+													break;
+												case 6:
+													trangThaiGiaoHang = "Giao Thất Bại";
+													break;
+												case 7:
+													trangThaiGiaoHang = "Không Nghe Máy";
+													break;
+												default:
+													break;
+											}
+										}
+										else
+										{
+											switch (x.v.TrangThai)
+											{
+												case Data.Enums.TrangThaiHoaDon.HoanThanh:
+													trangThaiGiaoHang = "Hoàn Thành";
+													break;
+												case Data.Enums.TrangThaiHoaDon.DaHuy:
+													trangThaiGiaoHang = "Đã Hủy";
+													break;
+												case Data.Enums.TrangThaiHoaDon.Ship:
+													trangThaiGiaoHang = "Ship";
+													break;
+												case Data.Enums.TrangThaiHoaDon.ChoXacNhan:
+													trangThaiGiaoHang = "Chờ Xác Nhận";
+													break;
+												case Data.Enums.TrangThaiHoaDon.DaXacNhan:
+													trangThaiGiaoHang = "Đã Xác Nhận";
+													break;
+												case Data.Enums.TrangThaiHoaDon.TraHang:
+													trangThaiGiaoHang = "Trả Hàng";
+													break;
+												default:
+													break;
+											}
+										}
+									}
+									@trangThaiGiaoHang
+								</td>
+								<td style="vertical-align: middle; width: 20%">
+									<NavLink class="btn_1" style="margin-right: 3px; margin-bottom: 3px" href="@($"/print/{x.v.Id}")">Xem Chi Tiết</NavLink>
+									@if((x.v.TrangThaiGiaoHang == 0 || x.v.TrangThaiGiaoHang == 1) && x.v.LoaiDonHang == 2)
+									{
+										<button @onclick="() => Huy(x.v)" class="btn_1" style="background: red">Hủy</button>
+									}
+									@if ((x.v.TrangThaiGiaoHang == 3 || x.v.TrangThai == 0) && x.v.DanhGia == null)
+									{
+										<NavLink href="@($"/review/{x.v.Id}")" class="btn_1" style="background: green">Đánh giá</NavLink>
+									}
+								</td>
+							</tr>
+						}
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</main>
+<!--/main-->
+
+@code{
+	ResponseList<HoaDonModel>? HoaDon;
+
+	string GhiChuHuyDonHang = "";
+
+	Uri Url = new Uri("https://localhost:7053/api/hoadon");
+
+	protected async override Task OnInitializedAsync()
+	{
+		var khachHang = await Session.GetItemAsync<KhachHangModel>("khachHang");
+		if(khachHang != null)
+			HoaDon = await HttpClient.GetFromJsonAsync<ResponseList<HoaDonModel>>("https://localhost:7053/api/HoaDon/khachhang/" + khachHang.Id);
+	}
+
+	async Task Huy(HoaDonModel hoaDon)
+	{
+		if(string.IsNullOrEmpty(GhiChuHuyDonHang)){ 
+			await Swal.FireAsync("", "Vui Lòng Nhập Lý Do Hủy", SweetAlertIcon.Error); 
+			return;
+		}
+
+		var confirm = await Swal.FireAsync(new SweetAlertOptions { TitleText = "Bạn Có Chắc Muốn Hủy Đơn Hàng", ShowConfirmButton = true, ShowCancelButton = true, Icon = SweetAlertIcon.Warning });
+
+		if (string.IsNullOrEmpty(confirm.Value)) return;
+
+		hoaDon.NgayCapNhat = DateTime.Now;
+		hoaDon.TrangThaiGiaoHang = 4;
+		var status = await HttpClient.PutAsJsonAsync<HoaDonModel>(Url.AddQuery("id", hoaDon.Id.ToString()), hoaDon);
+        if (status.IsSuccessStatusCode)
+        {
+            await Swal.FireAsync("", "Cập Nhật Thành Công", SweetAlertIcon.Success);
+        }
+        else
+        {
+
+            await Swal.FireAsync("", "Cập Nhật Thất Bại", SweetAlertIcon.Error);
+        }
+	}
+}

@@ -1,0 +1,299 @@
+﻿@page "/admin/product"
+@page "/admin/product/page/{page:int}"
+@using MinkyShopProject.Data.Enums
+@using MinkyShopProject.Data.Models
+@using System.Reflection
+@using System.ComponentModel
+@inject SweetAlertService Swal;
+@inject HttpClient HttpClient;
+@layout Shared.MainLayout
+@using Net.ConnectCode.Barcode
+@inject IJSRuntime JSRuntime
+<PageTitle>Sản Phẩm</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row mb-3 justify-content-between">
+                        <div class="col-12 d-flex">
+                            <div class="w-25 me-2">
+                                <select class="js-choice-nhom" @onchange='async e => { Filter.IdNhomSanPham = Guid.Parse(e.Value?.ToString() ?? ""); await Reload(); }'>
+                                    @if (NhomSanPhams != null)
+                                    {
+                                        <option value="@Guid.Empty">Tất Cả</option>
+                                        @foreach (var x in NhomSanPhams.Data.Content)
+                                        {
+                                            <option value="@x.Id">@x.Ten</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <input class="form-control me-2 w-25" placeholder="Nhập tên hoặc mã sản phẩm" @oninput='async e => { Filter.Ten = e.Value?.ToString() ?? ""; }' @onchange="async() => await Reload()" />
+                            <a>
+                                <button class="btn btn-primary btn-sm me-2 mb-0" data-bs-toggle="modal" data-bs-target="#exampleModal123" @onclick="() => { if(Barcodes == null || !Barcodes.Any()){
+    GenerateBarcode();
+}; }">
+                                    Xuất QR
+                                </button>
+                            </a>
+                            <NavLink href="admin/variant"><button class="btn btn-primary btn-sm mb-0">Thêm Sản Phẩm</button></NavLink>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle text-center">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-Ten" ? "+Ten" : "-Ten"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Tên</span>
+                                            @if (Filter.Sort != "-Ten")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nhóm</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                                        @onclick='() => {
+                                            SapXepGia = SapXepGia == true ? false : true;
+                                            if(SanPhams != null && SapXepGia == true)
+                                            {
+                                                SanPhams.Data.Content = SanPhams.Data.Content.OrderBy(c => c.BienThes.Min(c => c.GiaBan)).ToList();
+                                            }else{
+                                                if(SanPhams != null && SapXepGia == false){
+                                                    SanPhams.Data.Content = SanPhams.Data.Content.OrderByDescending(c => c.BienThes.Min(c => c.GiaBan)).ToList();
+                                                }
+                                            }
+                                        }'>
+                                        Giá
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Mã</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Biến Thể</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-TrangThai" ? "+TrangThai" : "-TrangThai"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Trạng Thái</span>
+                                            @if (Filter.Sort != "-TrangThai")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7" @onclick='async() => { Filter.Sort = Filter.Sort == "-NgayTao" ? "+NgayTao" : "-NgayTao"; await Reload(); }'>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Ngày Tạo</span>
+                                            @if (Filter.Sort != "-NgayTao")
+                                            {
+                                                <span class="fa fa-sort-down" style="font-size: 15px"></span>
+                                            }
+                                            else
+                                            {
+                                                <span class="fa fa-sort-up" style="font-size: 15px"></span>
+                                            }
+                                        </div>
+                                    </th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (SanPhams == null)
+                                {
+                                    <tr>
+                                        <td colspan="6">
+                                            <div class="spinner-grow text-primary" role="status">
+                                                <span class="sr-only">Loading...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @if (SanPhams.Data.Content.Count() > 0)
+                                    {
+                                        foreach (var x in SanPhams.Data.Content)
+                                        {
+                                            <tr>
+                                                <td class="w-25">
+                                                    <div class="d-flex">
+                                                        <img class="ms-3" style="width: 15%" src="@x.Anh">
+                                                        <input class="text-secondary ms-3 my-auto text-xs font-weight-bolder form-control border-0 py-0" disabled value="@x.Ten" />
+                                                    </div>
+                                                </td>
+                                                <td class="text-secondary text-xs font-weight-bold align-middle">@(x.NhomSanPham?.Ten ?? "Không Có")</td>
+                                                <td class="text-secondary text-xs font-weight-bold align-middle">@Helper.FormatMoney(x.BienThes?.Min(c => c.GiaBan))</td>
+                                                <td class="text-secondary text-xs font-weight-bold align-middle">@x.Ma</td>
+                                                <td class="text-secondary text-xs font-weight-bold align-middle">@x.BienThes?.Count() biến thể</td>
+                                                <td class="align-middle text-center p-0">
+                                                    <div class="form-check form-switch justify-content-center">
+                                                        <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault" @attributes='@(x.TrangThai == 0 ? new Dictionary<string, object>() { { "checked", "" } } : null)' @onchange='async() => {
+                                                            if (x.BienThes != null)
+                                                            {
+                                                                foreach (var x in x.BienThes)
+                                                                {
+                                                                    x.BienTheChiTiets = null;
+                                                                }
+                                                            }
+
+                                                            x.TrangThai = x.TrangThai == 0 ? 1 : 0;
+
+                                                            var result = await HttpClient.PutAsJsonAsync($"{Url}/{x.Id}", x);
+
+                                                            if (result.IsSuccessStatusCode)
+                                                                await Swal.FireAsync("", "Cập Nhật Thành Công", SweetAlertIcon.Success);
+                                                        }
+                                                        '>
+                                                    </div>
+                                                </td>
+                                                <td class="text-secondary text-xs font-weight-bold align-middle">@x.NgayTao</td>
+                                                <td class="text-secondary text-xs font-weight-bold align-middle">
+                                                    <NavLink href="@($"admin/product/{@x.Id}")" class="mx-3" data-bs-toggle="tooltip" data-bs-original-title="Edit product">
+                                                        <i class="fas fa-user-edit text-info" aria-hidden="true"></i>
+                                                    </NavLink>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="7" class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Không Có Dữ Liệu</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+
+                        </table>
+                    </div>
+                    <MinkyShopProject.Admin.Shared.PaginationComponent Model="SanPhams" Url="admin/product"></MinkyShopProject.Admin.Shared.PaginationComponent>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="exampleModal123" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">QR Code</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @if (Barcodes.Any())
+                {
+                    <div class="d-flex flex-wrap gap-3 flex-column">
+                        @foreach (var x in Barcodes)
+                        {
+                            <div class="d-flex flex-wrap">
+                                <span class="text-bolder me-3">@x.Product</span><br>
+                                @foreach (var y in x.Barcodes)
+                                {
+                                    <div class="d-flex flex-column me-5 mb-5">
+                                        <div id="barcode">@y.Barcode</div>
+                                        <div id="barcode_text">@y.BarcodeText</div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn bg-gradient-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int Page { get; set; }
+
+    ResponsePagination<SanPhamModel>? SanPhams;
+
+    Uri Url = new Uri("https://localhost:7053/api/sanpham");
+
+    List<BarcodeModel> Barcodes = new List<BarcodeModel>();
+
+    ResponsePagination<NhomSanPhamModel>? NhomSanPhams;
+
+    SanPhamQueryModel Filter = new SanPhamQueryModel() { Size = 5, Sort = "-NgayTao", IdNhomSanPham = Guid.Empty, Ten = "" };
+
+    bool? SapXepGia;
+
+    protected async override Task OnInitializedAsync()
+    {
+        if (NhomSanPhams == null || !NhomSanPhams.Data.Content.Any())
+        {
+            NhomSanPhams = await HttpClient.GetFromJsonAsync<ResponsePagination<NhomSanPhamModel>>("https://localhost:7053/api/nhomsanpham");
+        }
+    }
+
+    protected async override Task OnParametersSetAsync()
+    {
+        await Reload();
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && NhomSanPhams != null && NhomSanPhams.Data.Content.Any())
+        {
+            await JSRuntime.InvokeVoidAsync("choiceLoad", "{'searchEnabled': true}", ".js-choice-nhom");
+        }
+        else
+        {
+            NhomSanPhams = await HttpClient.GetFromJsonAsync<ResponsePagination<NhomSanPhamModel>>("https://localhost:7053/api/nhomsanpham");
+            await JSRuntime.InvokeVoidAsync("choiceLoad", "{'searchEnabled': true}", ".js-choice-nhom");
+        }
+    }
+
+    async Task Delete(Guid id)
+    {
+        var confirm = await Swal.FireAsync(new SweetAlertOptions { Text = "Bạn Có Chắc Muốn Xóa", ShowConfirmButton = true, ShowCancelButton = true, Icon = SweetAlertIcon.Warning });
+
+        if (string.IsNullOrEmpty(confirm.Value)) return;
+
+        var result = await HttpClient.DeleteAsync($"{Url}/SanPham?id={id}");
+
+        if (result.IsSuccessStatusCode)
+        {
+            await Reload();
+        }
+    }
+
+    async Task Reload()
+    {
+        if (Page == 0) Page = 1;
+        SanPhams = await HttpClient.GetFromJsonAsync<ResponsePagination<SanPhamModel>>(Url.AddQuery("size", Filter.Size.ToString() ?? "5").AddQuery("page", Page.ToString()).AddQuery("sort", Filter.Sort).AddQuery("IdNhomSanPham", Filter.IdNhomSanPham.ToString()).AddQuery("Ten", Filter.Ten));
+    }
+
+    void GenerateBarcode()
+    {
+        foreach (var x in SanPhams.Data.Content)
+        {
+            var barCodes = new List<BarcodeModelString>();
+            foreach (var y in x.BienThes)
+            {
+                BarcodeFonts bcf = new BarcodeFonts();
+                bcf.BarcodeType = BarcodeFonts.BarcodeEnum.Code128B;
+                bcf.CheckDigit = BarcodeFonts.YesNoEnum.Yes;
+                bcf.Data = y.Sku;
+                bcf.encode();
+                barCodes.Add(new BarcodeModelString() { Barcode = bcf.EncodedData, BarcodeText = bcf.HumanText });
+            }
+            Barcodes.Add(new BarcodeModel() { Barcodes = barCodes, Product = x.Ten });
+        }
+    }
+}

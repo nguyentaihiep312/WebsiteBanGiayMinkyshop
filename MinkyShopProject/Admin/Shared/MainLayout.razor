@@ -1,0 +1,26 @@
+﻿@inherits LayoutComponentBase;
+@inject NavigationManager NavigationManager;
+@inject ILocalStorageService local;
+@inject SweetAlertService Swal;
+
+<div class="min-height-300 bg-primary position-absolute w-100" style="background-image: url('https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-pro/assets/img/profile-layout-header.jpg'); background-position-y: 50%;">
+    <span class="mask bg-primary opacity-6"></span>
+</div>
+@if (!NavigationManager.Uri.ToLower().Contains("cart"))
+{
+    <SidebarComponent></SidebarComponent>
+}
+<main class="main-content position-relative border-radius-lg ">
+    <HeaderComponent></HeaderComponent>
+    @Body
+</main>
+
+@code{
+
+    protected async override Task OnInitializedAsync()
+    {
+        if (await local.GetItemAsStringAsync("Token") == null) NavigationManager.NavigateTo("/login");
+    }
+}
+
+

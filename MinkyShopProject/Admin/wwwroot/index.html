@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" class="js">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" type="image/png" href="./assets/img/logo.png">
+    <title>MinkyShop</title>
+    <base href="/" />
+
+    <!--     Fonts and icons     -->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+    <!-- Nucleo Icons -->
+    <link href="../assets/css/nucleo-icons.css" rel="stylesheet" />
+    <link href="../assets/css/nucleo-svg.css" rel="stylesheet" />
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+    <!-- CSS Files -->
+    <link id="pagestyle" href="../assets/css/argon-dashboard.css?v=2.0.4" rel="stylesheet" />
+
+    <style TYPE="text/css" media="screen,print">
+        @font-face {
+            font-family: CCode39;
+            src: url("assets/fonts/ConnectCode128_S3_Trial.woff") format('woff')
+        }
+
+        @font-face {
+            font-family: CCodeQR;
+            src: url("fonts/CCodeQR_Trial.eot");
+            src: local("CCodeQR_Trial"), url("fonts/CCodeQR_Trial.otf") format("opentype"), url("assets/fonts/CCodeQR_Trial.woff") format("woff");
+        }
+
+        #barcode {
+            font-weight: normal;
+            font-style: normal;
+            line-height: normal;
+            font-family: 'CCode39', sans-serif;
+            text-align: center;
+            font-size: 32px
+        }
+
+        #barcode_text {
+            font-weight: normal;
+            font-style: normal;
+            line-height: normal;
+            font-family: sans-serif;
+            text-align: center;
+            font-size: 24px
+        }
+
+
+        #barcodeFonts {
+            font-weight: normal;
+            font-style: normal;
+            line-height: normal;
+            font-family: 'CCodeQR', sans-serif;
+            font-size: 4px;
+        }
+    </style>
+</head>
+
+<body class="g-sidenav-show bg-gray-100">
+    <div id="app"></div>
+    <!--<div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>-->
+    <!-- Messenger Plugin chat Code -->
+    <!--<div id="fb-root"></div>-->
+
+    <!-- Your Plugin chat code -->
+    <!--<div id="fb-customer-chat" class="fb-customerchat">
+    </div>-->
+
+    <script src="_framework/blazor.webassembly.js"></script>
+
+    <script>
+        var chatbox = document.getElementById('fb-customer-chat');
+        chatbox.setAttribute("page_id", "100968692847412");
+        chatbox.setAttribute("attribution", "biz_inbox");
+    </script>
+
+    <!-- Your SDK code -->
+    <script>
+        window.fbAsyncInit = function () {
+            FB.init({
+                xfbml: true,
+                version: 'v16.0'
+            });
+        };
+
+        (function (d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) return;
+            js = d.createElement(s); js.id = id;
+            js.src = 'https://connect.facebook.net/vi_VN/sdk/xfbml.customerchat.js';
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+    <!--   Core JS Files   -->
+    <script src="../assets/js/core/popper.min.js"></script>
+    <script src="../assets/js/core/bootstrap.min.js"></script>
+    <script src="../assets/js/plugins/perfect-scrollbar.min.js"></script>
+    <script src="../assets/js/plugins/smooth-scrollbar.min.js"></script>
+    <script src="../assets/js/plugins/chartjs.min.js"></script>
+    <script src="https://demos.creative-tim.com/soft-ui-design-system-pro/assets/js/plugins/choices.min.js"></script>
+    <!-- Github buttons -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <!-- Control Center for Soft Dashboard: parallax effects, scripts for the example pages etc -->
+    <script src="../assets/js/argon-dashboard.min.js?v=2.0.4"></script>
+    <script src="_content/CurrieTechnologies.Razor.SweetAlert2/sweetAlert2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.4/jquery.min.js" integrity="sha512-pumBsjNRGGqkPzKHndZMaAG+bir374sORyzM3uulLV14lN5LyykqNk8eEeUlUkB3U0M4FApyaHraT65ihJhDpQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="assets/js/main.js" type="module"></script>
+</body>
+</html>

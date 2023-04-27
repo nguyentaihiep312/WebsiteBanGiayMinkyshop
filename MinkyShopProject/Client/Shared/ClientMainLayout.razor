@@ -1,0 +1,27 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime JSRuntime;
+@inject Blazored.SessionStorage.ISessionStorageService Session
+@inject NavigationManager NavigationManager
+
+<div id="page">
+    <HeaderComponent></HeaderComponent>
+    @Body
+    <FooterComponent></FooterComponent>
+</div>
+
+<div id="toTop"></div><!-- Back to top button -->
+
+@code{
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JSRuntime.InvokeVoidAsync("main");
+    }
+
+    protected async override Task OnInitializedAsync()
+    {
+        if(await Session.GetItemAsStringAsync("khachHang") == null && !NavigationManager.Uri.Contains("product"))
+        {
+            NavigationManager.NavigateTo("/account");
+        }
+    }
+}

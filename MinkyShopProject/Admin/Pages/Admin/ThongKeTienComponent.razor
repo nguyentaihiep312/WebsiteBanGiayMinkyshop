@@ -1,0 +1,58 @@
+﻿@page "/admin/thongke/TienNgayThangNam"
+@using MinkyShopProject.Data.Models
+@inject SweetAlertService Swal
+@inject HttpClient HttpClient
+@inject IJSRuntime JSRuntime
+
+<div class="card z-index-1 h-100">
+    <div class="card-header pb-0 pt-3 bg-transparent d-flex justify-content-between align-items-center">
+        <h6 class="text-capitalize">Thống kê doanh thu</h6>
+        <select class="form-control w-50" @onchange='async e => { selectedOption = e.Value?.ToString() ?? ""; await Reload(); }'>
+            <option value="homnay">Hôm nay</option>
+            <option value="homqua">Hôm qua</option>
+            <option value="7ngaytruoc">Tuần trước</option>
+            <option value="thangtruoc">Tháng trước</option>
+            <option value="thangnay">Tháng này</option>
+        </select>
+        @if (ThongKeTongTienResult != null)
+        {
+            <p class="text-sm mb-0">
+                Tổng tiền: @Helper.FormatMoney(ThongKeTongTienResult.Data.TongTienTatCa)
+            </p>
+        }
+    </div>
+    <div class="card-body p-3">
+        <div class="chart">
+            <canvas id="chart" class="chart-canvas" height="150"></canvas>
+        </div>
+    </div>
+</div>
+
+@code {
+    string selectedOption = "homnay";
+    Uri Url;
+    ResponseObject<ThongKeTongTienResult> ThongKeTongTienResult;
+
+    protected async override void OnInitialized()
+    {
+        if(ThongKeTongTienResult == null)
+        {
+            Url = new Uri($"https://localhost:7053/api/ThongKe/ThongKeTongTienNgayTienThangNam?loaiThongKe={selectedOption}");
+            ThongKeTongTienResult = await HttpClient.GetFromJsonAsync<ResponseObject<ThongKeTongTienResult>>(Url);
+        }
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        Url = new Uri($"https://localhost:7053/api/ThongKe/ThongKeTongTienNgayTienThangNam?loaiThongKe={selectedOption}");
+        ThongKeTongTienResult = await HttpClient.GetFromJsonAsync<ResponseObject<ThongKeTongTienResult>>(Url);
+        await JSRuntime.InvokeVoidAsync("drawChart", ThongKeTongTienResult);
+    }
+
+    async Task Reload()
+    {
+        Url = new Uri($"https://localhost:7053/api/ThongKe/ThongKeTongTienNgayTienThangNam?loaiThongKe={selectedOption}");
+        ThongKeTongTienResult = await HttpClient.GetFromJsonAsync<ResponseObject<ThongKeTongTienResult>>(Url);
+        await JSRuntime.InvokeVoidAsync("drawChart", ThongKeTongTienResult);
+    }
+} 
